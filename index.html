@@ -182,6 +182,7 @@ body{margin:0;background:var(--bg);color:var(--t1);
   font:inherit;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0}
 .t.elan{background:var(--moonbg);border:1.5px dashed #d9c8e6;padding:8.5px 9.5px}
 .t.pj{background:var(--pcbg)}
+.t.pj.kc:not(.done){background:var(--kc)}
 .t.pj .ring{border-color:color-mix(in srgb,var(--pc) 50%,var(--line2))}
 .t.pj .ring.p{border-color:var(--sea)}
 .t.elan.pj{border-color:color-mix(in srgb,var(--pc) 55%,transparent)}
@@ -1081,6 +1082,25 @@ function couleurProjet(pid){
 }
 function couleurLigne(pid){return pid&&projet(pid)?' pj':''}
 function styleLigne(pid){if(!pid||!projet(pid))return '';return ' style="'+varsCouleur(couleurProjet(pid))+'"'}
+function partsCourses(t){
+  var els=elementsDe(t),reste=els.filter(function(x){return !x.fait}),n={},rang={};
+  (reste.length?reste:els).forEach(function(x){if(x.projet&&projet(x.projet))n[x.projet]=(n[x.projet]||0)+1});
+  D.projets.forEach(function(p,i){rang[p.id]=i});
+  var ids=Object.keys(n).sort(function(a,b){return n[b]-n[a]||rang[a]-rang[b]});
+  var tot=ids.reduce(function(s,k){return s+n[k]},0),MIN=0.15;
+  var petits=ids.filter(function(k){return ids.length>1&&n[k]/tot<MIN}),reste2=1-petits.length*MIN;
+  var totG=ids.filter(function(k){return petits.indexOf(k)<0}).reduce(function(s,k){return s+n[k]},0);
+  return ids.map(function(k){return [k,petits.indexOf(k)>=0?MIN:reste2*n[k]/totG]});
+}
+function couleurT(t){return estCourses(t)?(partsCourses(t).length?' pj kc':''):couleurLigne(t.projet)}
+function styleT(t){
+  if(!estCourses(t))return styleLigne(t.projet);
+  var parts=partsCourses(t);if(!parts.length)return '';
+  var pos=0,bandes=parts.map(function(x){
+    var c=couleurProjet(x[0]),a=Math.round(pos*1000)/10;pos+=x[1];
+    return c[0]+' '+a+'% '+(Math.round(pos*1000)/10)+'%'});
+  return ' style="'+varsCouleur(couleurProjet(parts[0][0]))+';--kc:linear-gradient(90deg,'+bandes.join(',')+')"';
+}
 function tagProjet(t){
   if(!t.projet)return '';
   var p=projet(t.projet),c=couleurProjet(t.projet);
@@ -1620,7 +1640,7 @@ function ligneT(t,o){
       dur=t.duree?h(t.duree):'';
     }else dur=compte+(t.duree?' · '+h(t.duree):'');
   }
-  return '<div class="t'+(t.statut==='fait'?' done':'')+(rec?' rec':'')+(et&&et.quand?' rec-tard':'')+(u&&u.niv==='dur'?' urgent':'')+couleurLigne(t.projet)+'" data-l="'+t.ligne+'"'+(t.occ?' data-occ="'+t.occ+'"':'')+styleLigne(t.projet)+'>'+
+  return '<div class="t'+(t.statut==='fait'?' done':'')+(rec?' rec':'')+(et&&et.quand?' rec-tard':'')+(u&&u.niv==='dur'?' urgent':'')+couleurT(t)+'" data-l="'+t.ligne+'"'+(t.occ?' data-occ="'+t.occ+'"':'')+styleT(t)+'>'+
     '<span class="'+cls+'"></span>'+corpsLigne(esc(t.tache),
       (o.sansProjet?'':tagProjet(t))+autre+badge(u)+tog+(dur?'<span class="dur">'+dur+'</span>':'')+reveil)+'</div>';
 }
@@ -1991,22 +2011,22 @@ function listeReserve(t){
 }
 function ligneTrace(p){
   var t=tacheId(p.tache);if(!t)return '';
-  if(estRecurrente(t)&&p.avancement>=1)return '<div class="t trace done'+couleurLigne(t.projet)+'" data-tl="'+t.ligne+'" data-trace="'+esc(p.id)+'"'+styleLigne(t.projet)+'><span class="ring full"></span>'+
+  if(estRecurrente(t)&&p.avancement>=1)return '<div class="t trace done'+couleurT(t)+'" data-tl="'+t.ligne+'" data-trace="'+esc(p.id)+'"'+styleT(t)+'><span class="ring full"></span>'+
     corpsLigne(esc(t.tache),'<span class="rec">🔁 faite ce jour-là</span>')+'</div>';
   if(estCourses(t)&&p.avancement>=1){
     var pa=progresDe(t.id,p.jour),ach=pa?pa.elements.map(elementId).filter(Boolean):[];
-    return '<div class="t trace done" data-tl="'+t.ligne+'" data-trace="'+esc(p.id)+'"><span class="ring full"></span>'+
+    return '<div class="t trace done pj" data-tl="'+t.ligne+'" data-trace="'+esc(p.id)+'"'+styleLigne('$c')+'><span class="ring full"></span>'+
       corpsLigne(esc(t.tache),'<span class="rec">'+(ach.length?esc(ach.map(function(x){return sansEmoji(x.texte)}).join(', '))+' ✓':'faite ce jour-là')+'</span>')+'</div>';
   }
   var g=gainDuJour(t.id,p.jour),r=g>0?' p':'';
-  return '<div class="t trace'+couleurLigne(t.projet)+'" data-tl="'+t.ligne+'" data-trace="'+esc(p.id)+'"'+styleLigne(t.projet)+'><span class="ring'+r+'"></span>'+
+  return '<div class="t trace'+couleurT(t)+'" data-tl="'+t.ligne+'" data-trace="'+esc(p.id)+'"'+styleT(t)+'><span class="ring'+r+'"></span>'+
     corpsLigne(esc(t.tache),'<span class="dur">'+(g>0?'+'+pctTxt(g)+' ce jour-là':'pas avancée ce jour-là')+'</span>'+
       (t.statut==='fait'?'<span class="tag">finie depuis</span>':(t.jour&&t.jour!==p.jour?'<span class="tag">reprise le '+dateCourte(t.jour)+'</span>':'')))+'</div>';
 }
 function lignePose(p){
   var t=tacheId(p.tache),els=elementsPose(p);if(!t||!els.length)return '';
   var f=els.filter(function(x){return x.fait}).length,tout=f===els.length;
-  return '<div class="t pose'+(tout?' done':'')+couleurLigne(t.projet)+'" data-pose="'+esc(p.id)+'"'+styleLigne(t.projet)+'>'+
+  return '<div class="t pose'+(tout?' done':'')+couleurT(t)+'" data-pose="'+esc(p.id)+'"'+styleT(t)+'>'+
     '<span class="ring'+(tout?' full':(f?' p':''))+'" data-pose-ring></span>'+
     corpsLigne(esc(t.tache),'<span class="dur">☰ '+f+'/'+els.length+'</span><span class="pose-els">'+esc(els.map(function(x){return sansEmoji(x.texte)}).join(', '))+'</span>')+'</div>';
 }
