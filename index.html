@@ -1369,8 +1369,7 @@ function poserParticipation(id,statut){
     var titre='📺 Regarder le replay : '+o.titre+(o.source?' · '+o.source:'');
     if(!tacheReplay(o)){
       document.getElementById('hint').textContent='« '+titre+' » ajoutée à ta réserve.';
-      google.script.run.withSuccessHandler(charger).withFailureHandler(echecServeur)
-        .ajouterTache(titre,{projet:projetsEvt(o)[0]||'',duree_min:o.duree||'',contexte:'en ligne',
+      creerTacheLocale(titre,{projet:projetsEvt(o)[0]||'',duree_min:o.duree||'',contexte:'en ligne',
           note:(o.source?o.source+' · ':'')+'conférence du '+dateCourte(o.jour)+(o.heure?' à '+heureAff(o.heure):'')});
     }
   }
@@ -1536,6 +1535,7 @@ function maj(){
 }
 
 function rendre(){
+  garderCopie();
   majRappelsLies();
   dateAff();
   var act=D.taches.filter(function(t){return t.statut!=='sommeil'})
@@ -2588,7 +2588,22 @@ function ajouterNouvelle(){
   var champs={projet:nouvelle.projet,moment:nouvelle.moment,jour:nouvelle.moment?jourVu:'',duree_min:Number(nouvelle.duree)||''};
   fermerFiche();
   document.getElementById('hint').textContent='« '+titre+' » ajoutée.';
-  google.script.run.withSuccessHandler(charger).withFailureHandler(echecServeur).ajouterTache(titre,champs);
+  creerTacheLocale(titre,champs);
+}
+function tacheLocale(titre,champs){
+  var n=D.taches.map(function(t){return parseInt(String(t.id).replace(/\D/g,''),10)||0}),ln=D.taches.map(function(t){return t.ligne||0});
+  var t={ligne:Math.max.apply(null,ln.concat([1]))+1,id:'T'+(Math.max.apply(null,n.concat([0]))+1),tache:titre,projet:champs.projet||'',
+    nature:champs.nature||'ponctuelle',contexte:champs.contexte||'',duree:Number(champs.duree_min)||0,avancement:0,echeance:champs.echeance||'',
+    statut:'a faire',note:champs.note||'',moment:champs.moment||'',jour:champs.jour||'',apres:'',rampe:champs.visible_a_partir_de||'',
+    debut:champs.debut||'',souhaitee:champs.souhaitee||'',ordre:0,fait_le:'',type:champs.type||'',tous_les:0,mensuel:false,derniere:'',pause:'',pose_auto:''};
+  D.taches.push(t);rendre();
+  return t;
+}
+function idConfirme(t){return function(id){if(typeof id==='string'&&id&&id!==t.id){t.id=id;charger();}}}
+function creerTacheLocale(titre,champs){
+  var t=tacheLocale(titre,champs);
+  google.script.run.withSuccessHandler(idConfirme(t)).withFailureHandler(echecServeur).ajouterTache(titre,Object.assign({id:t.id},champs));
+  return t;
 }
 
 var achLieu={},achNvLieu='',achOuvert={},achDejaOuvert=false;
@@ -2699,7 +2714,8 @@ document.addEventListener('click',function(e){
   if(e.target.closest('[data-idee-tache]')){
     D.idees=D.idees.filter(function(x){return x!==i});confirmeIdee=null;rafraichirIdees();
     document.getElementById('hint').textContent='Idée devenue tâche : « '+i.texte+' » (dans « À poser »).';
-    google.script.run.withSuccessHandler(charger).withFailureHandler(echecServeur).ideeEnTache(i.id);
+    var ti=tacheLocale(sansEmoji(i.texte)===i.texte?'📝 '+i.texte:i.texte,{projet:i.projet||'',note:i.note||''});
+    google.script.run.withSuccessHandler(idConfirme(ti)).withFailureHandler(echecServeur).ideeEnTache(i.id,ti.id);
     return;
   }
   if(e.target.closest('[data-idee-sup]')){
@@ -3834,6 +3850,7 @@ function fermerProjet(){
   rendre();
 }
 function renderPModal(){
+  garderCopie();
   if(formP){renderFormProjet();return;}
   var p=D.projets.filter(function(x){return x.id===pmodal.dataset.p})[0];if(!p)return;
   var tous=tachesSuivies(p.id),ts=tous.filter(function(t){return t.statut!=='sommeil'});
@@ -4966,6 +4983,11 @@ function charger(){
   }).getData();
 }
 var enCopie=false;
+var copieMinuteur=null;
+function garderCopie(){clearTimeout(copieMinuteur);copieMinuteur=setTimeout(ecrireCopie,600);}
+function ecrireCopie(){clearTimeout(copieMinuteur);if(!D||!D.aujourdhui)return;try{localStorage.setItem(CLE_COPIE,JSON.stringify(D))}catch(_){}}
+document.addEventListener('visibilitychange',function(){if(document.hidden)ecrireCopie()});
+window.addEventListener('pagehide',ecrireCopie);
 try{var copie=JSON.parse(localStorage.getItem(CLE_COPIE)||'null');
   if(copie&&copie.aujourdhui===iso(new Date())){enCopie=true;appliquer(copie);document.body.classList.add('copie');}}catch(_){enCopie=false}
 charger();
