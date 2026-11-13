@@ -1734,6 +1734,8 @@ document.addEventListener('click',function(e){
     return;
   }
   if(e.target.closest('#pmodal [data-pact]')){fermerProjet();return;}
+  var hev=e.target.closest('[data-hist-ev]');
+  if(hev){var ohe=D.evenements.filter(function(x){return x.id===hev.dataset.histEv&&x.jour===hev.dataset.histJ})[0];if(ohe)ouvrirEvt(ohe);return;}
   var hi=e.target.closest('[data-hist-e]');
   if(hi){ouvrirAvancee(hi.dataset.histE,hi.dataset.histJ);return;}
   var ht=e.target.closest('[data-hist-t]');
@@ -2879,7 +2881,7 @@ fiche.addEventListener('click',function(e){
     D.evenements.forEach(function(x){if(x.id===id){x.projets=sel.slice();x.projet=sel[0];x.perso=true;}});
     D.archives.forEach(function(a){if(a.evenement===id)a.projets=sel.slice();});
     google.script.run.withFailureHandler(echecServeur).setProjetsEvenement(id,sel,o.titreOrigine||o.titre);
-    rendre();ouvrirEvt(o);return;
+    rendre();if(pmodal.classList.contains('on'))renderPModal();ouvrirEvt(o);return;
   }
   if(e.target.closest('[data-evbase]'))revenirProjetsBase(id);
 });
@@ -3308,9 +3310,9 @@ function historiqueProjet(pid){
         (titres.length?'<small class="hist-titres">'+titres.map(esc).join(' · ')+'</small>':'')+
         (x.a.note?'<small>'+esc(x.a.note)+'</small>':'')+'</span><span class="s">'+h(x.min)+'</span></button>';
     }
-    return '<div class="hist hist-evt"><span class="d">'+dateEvt(x.jour)+'</span><span class="n"><i class="hk">✓</i>'+esc(x.o.titre)+
+    return '<button type="button" class="hist hist-evt" data-hist-ev="'+esc(x.o.id)+'" data-hist-j="'+x.o.jour+'"><span class="d">'+dateEvt(x.jour)+'</span><span class="n"><i class="hk">✓</i>'+esc(x.o.titre)+
       '<small>'+(x.o.heure?heureAff(x.o.heure)+' · ':'')+'j’y étais'+(x.o.source&&x.o.source!=='souvenir'?' · '+esc(x.o.source):'')+'</small></span>'+
-      '<span class="s">'+(x.min?h(x.min):'')+'</span></div>';
+      '<span class="s">'+(x.min?h(x.min):'')+'</span></button>';
   }).join('')+(items.length>15?'<div class="fx-cap">… et '+(items.length-15)+' plus anciens</div>':'');
 }
 function archivesProjet(pid){
@@ -3430,8 +3432,11 @@ function relatifJour(j){
 function ligneJournal(x){
   var p=projet(x.pid),pill='<span class="d">'+(p&&p.icone?p.icone:'·')+'</span>',st=styleLigne(x.pid);
   var temps='<span class="s">'+(x.min?h(x.min):'')+'</span>';
-  if(x.k==='evt')return '<div class="hist hist-evt"'+st+'>'+pill+'<span class="n"><i class="hk">✓</i>'+esc(x.o.titre)+
-    '<small>'+(x.o.heure?heureAff(x.o.heure)+' · ':'')+'j’y étais'+(x.o.source&&x.o.source!=='souvenir'?' · '+esc(x.o.source):'')+'</small></span>'+temps+'</div>';
+  if(x.k==='evt'){
+    var ems=projetsEvt(x.o).map(projet).filter(Boolean).map(function(q){return q.icone||'·'});
+    return '<button type="button" class="hist hist-evt"'+st+' data-hist-ev="'+esc(x.o.id)+'" data-hist-j="'+x.o.jour+'">'+(ems.length>1?'<span class="d">'+ems.join('')+'</span>':pill)+'<span class="n"><i class="hk">✓</i>'+esc(x.o.titre)+
+    '<small>'+(x.o.heure?heureAff(x.o.heure)+' · ':'')+'j’y étais'+(x.o.source&&x.o.source!=='souvenir'?' · '+esc(x.o.source):'')+'</small></span>'+temps+'</button>';
+  }
   if(x.k==='prog'){
     var finie=x.p.fin>=1;
     return '<button type="button" class="hist hist-tache"'+st+' data-hist-t="'+x.t.ligne+'">'+pill+'<span class="n"><i class="hk">'+(finie?'✓':'◐')+'</i>'+esc(x.t.tache)+
