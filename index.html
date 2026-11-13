@@ -3503,6 +3503,20 @@ function joursJournal(){
   });
   return jours;
 }
+function posTacheJour(t,j){
+  if(t.jour===j&&t.moment)return {m:t.moment,o:t.ordre||0};
+  var p=D.poses.filter(function(x){return x.tache===t.id&&x.jour===j})[0];
+  return p?{m:p.moment,o:p.ordre||0}:{m:'journee',o:0};
+}
+function cleJournal(x,j){
+  var r=function(m){return ORDRE_MOM[m]!=null?ORDRE_MOM[m]:0},o=function(n){return n||1e6};
+  if(x.k==='evt')return [r(x.o.moment||'journee'),0,x.o.heure||'',0,x.rangJ];
+  if(x.k==='elan')return [r(x.a.moment||'journee'),1,'',o(x.a.ordre),x.rangJ];
+  if(x.k==='lu')return [9,1,'',0,x.rangJ];
+  if(x.occ){var f=D.poses.filter(function(p){return p.tache===x.t.id&&p.jour===j&&p.moment===x.occ})[0];return [r(x.occ),1,'',o(f&&f.ordre),x.rangJ];}
+  var pos=posTacheJour(x.t,j);
+  return [r(pos.m),1,'',o(pos.o),x.rangJ];
+}
 function resumeJour(j){
   var ts={},n={elan:0,evt:0,lu:0},min=0;
   j.items.forEach(function(x){
@@ -3558,7 +3572,8 @@ function renderJournal(){
   document.getElementById('jfiltres').innerHTML=[['tout','Tous les jours'],['ecrit','📓 Ce que j’ai écrit'+(ecrits?' · '+ecrits:'')]].map(function(x){
     return '<button class="'+(journalFiltre===x[0]?'on':'')+'" data-jf="'+x[0]+'">'+x[1]+'</button>'}).join('');
   var vus=journalFiltre==='ecrit'?tous.filter(function(j){return j.texte}):tous;
-  var ordre=function(a,b){return a.ordre.localeCompare(b.ordre)};
+  var ordre=function(a,b){var ka=cleJournal(a,a.jourJ),kb=cleJournal(b,b.jourJ);
+    for(var i=0;i<ka.length;i++){if(ka[i]<kb[i])return -1;if(ka[i]>kb[i])return 1;}return 0;};
   var html=!journalDe(AUJ)?'<button type="button" class="jc-ecrire jc-ecrire-auj" data-jr-ouvrir="'+AUJ+'">✏️ Écrire sur aujourd’hui</button>':'';
   html+=vus.slice(0,journalNb).map(function(j){
     var rel=relatifJour(j.jour);
@@ -3567,7 +3582,7 @@ function renderJournal(){
       '<div class="jc-resume">'+resumeJour(j)+'</div></div>'+
       (j.texte?'<button type="button" class="jc-texte" data-jr-ouvrir="'+j.jour+'">'+esc(j.texte)+'</button>':
         '<button type="button" class="jc-ecrire" data-jr-ouvrir="'+j.jour+'">✏️ Écrire sur ce jour</button>')+
-      (j.items.length?'<div class="jc-items">'+j.items.slice().sort(ordre).map(ligneJournal).join('')+'</div>':'')+
+      (j.items.length?'<div class="jc-items">'+j.items.map(function(x,i){x.jourJ=j.jour;x.rangJ=i;return x}).slice().sort(ordre).map(ligneJournal).join('')+'</div>':'')+
       '</section>';
   }).join('');
   if(!vus.length)html+='<div class="empty">'+(journalFiltre==='ecrit'?'Rien d’écrit pour l’instant : le journal se remplit depuis la journée.':'Rien encore : ce que tu fais apparaîtra ici, jour par jour.')+'</div>';

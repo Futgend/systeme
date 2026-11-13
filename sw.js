@@ -1,7 +1,7 @@
 // Service worker : garde la structure de l'app sur l'appareil (ouverture immédiate, même sans réseau).
 // VERSION change à chaque fabrication du site : la nouvelle structure est mise en cache d'un bloc,
 // puis remplace l'ancienne à l'ouverture suivante. Les appels à l'API (POST) ne passent jamais par ici.
-var VERSION = 'dd33389c97f8';
+var VERSION = '397c28d7506c';
 var STRUCTURE = ['./', 'index.html', 'relais.js', 'manifest.webmanifest', 'icone-192.png', 'icone-512.png', 'icone-180.png'];
 var POLICES = 'systeme-polices';
 
