@@ -183,6 +183,7 @@ body{margin:0;background:var(--bg);color:var(--t1);
 .t.elan{background:var(--moonbg);border:1.5px dashed #d9c8e6;padding:8.5px 9.5px}
 .t.pj{background:var(--pcbg)}
 .t.pj.kc:not(.done){background:var(--kc)}
+.hist.hist-tache.kc{background:var(--kc)}
 .t.pj .ring{border-color:color-mix(in srgb,var(--pc) 50%,var(--line2))}
 .t.pj .ring.p{border-color:var(--sea)}
 .t.elan.pj{border-color:color-mix(in srgb,var(--pc) 55%,transparent)}
@@ -1134,8 +1135,12 @@ function couleurProjet(pid){
 function couleurLigne(pid){return pid&&projet(pid)?' pj':''}
 function styleLigne(pid){if(!pid||!projet(pid))return '';return ' style="'+varsCouleur(couleurProjet(pid))+'"'}
 function partsCourses(t){
-  var els=elementsDe(t),reste=els.filter(function(x){return !x.fait}),n={},rang={};
-  (reste.length?reste:els).forEach(function(x){if(x.projet&&projet(x.projet))n[x.projet]=(n[x.projet]||0)+1});
+  var els=elementsDe(t),reste=els.filter(function(x){return !x.fait});
+  return partsDe(reste.length?reste:els);
+}
+function partsDe(els){
+  var n={},rang={};
+  els.forEach(function(x){if(x.projet&&projet(x.projet))n[x.projet]=(n[x.projet]||0)+1});
   D.projets.forEach(function(p,i){rang[p.id]=i});
   var ids=Object.keys(n).sort(function(a,b){return n[b]-n[a]||rang[a]-rang[b]});
   var tot=ids.reduce(function(s,k){return s+n[k]},0),MIN=0.15;
@@ -1147,10 +1152,13 @@ function couleurT(t){return estCourses(t)?(partsCourses(t).length?' pj kc':''):c
 function styleT(t){
   if(!estCourses(t))return styleLigne(t.projet);
   var parts=partsCourses(t);if(!parts.length)return '';
-  var pos=0,bandes=parts.map(function(x){
+  return ' style="'+varsCouleur(couleurProjet(parts[0][0]))+';--kc:'+bandesKc(parts,0)+'"';
+}
+function bandesKc(parts,k){
+  var pos=0;
+  return 'linear-gradient(90deg,'+parts.map(function(x){
     var c=couleurProjet(x[0]),a=Math.round(pos*1000)/10;pos+=x[1];
-    return c[0]+' '+a+'% '+(Math.round(pos*1000)/10)+'%'});
-  return ' style="'+varsCouleur(couleurProjet(parts[0][0]))+';--kc:linear-gradient(90deg,'+bandes.join(',')+')"';
+    return (k==='mi'?'color-mix(in srgb,'+c[0]+' 50%,'+c[1]+')':c[k])+' '+a+'% '+(Math.round(pos*1000)/10)+'%'}).join(',')+')';
 }
 function tagProjet(t){
   if(!t.projet)return '';
@@ -3494,7 +3502,14 @@ function relatifJour(j){
   return d===0?'aujourd’hui':d===-1?'hier':d===-2?'avant-hier':'';
 }
 function ligneJournal(x){
-  var p=projet(x.pid),pill='<span class="d">'+(p&&p.icone?p.icone:'·')+'</span>',st=styleLigne(x.pid);
+  var p=projet(x.pid),pill='<span class="d">'+(p&&p.icone?p.icone:'·')+'</span>',st=styleLigne(x.pid),kc='';
+  if(x.t&&estCourses(x.t)&&(x.k==='prog'||x.k==='tache')){
+    var pa=partsDe(x.els&&x.els.length?x.els:listeDe(x.t).filter(function(y){return y.type==='element'}));
+    if(pa.length){
+      st=' style="'+varsCouleur(couleurProjet(pa[0][0]))+';--kc:'+bandesKc(pa,'mi')+'"';kc=' kc';
+      pill='<span class="d">'+pa.map(function(y){return projet(y[0]).icone||'·'}).join('')+'</span>';
+    }
+  }
   var temps='<span class="s">'+(x.min?h(x.min):'')+'</span>';
   if(x.k==='evt'){
     var ems=projetsEvt(x.o).map(projet).filter(Boolean).map(function(q){return q.icone||'·'});
@@ -3503,11 +3518,11 @@ function ligneJournal(x){
   }
   if(x.k==='prog'){
     var finie=x.p.fin>=1;
-    return '<button type="button" class="hist hist-tache"'+st+' data-hist-t="'+x.t.ligne+'">'+pill+'<span class="n"><i class="hk">'+(finie?'✓':'◐')+'</i>'+esc(x.t.tache)+
+    return '<button type="button" class="hist hist-tache'+kc+'"'+st+' data-hist-t="'+x.t.ligne+'">'+pill+'<span class="n"><i class="hk">'+(finie?'✓':'◐')+'</i>'+esc(x.t.tache)+
       (x.els.length?'<small>'+esc(x.els.map(function(y){return sansEmoji(y.texte)}).join(', '))+' ✓</small>':'')+
       '<small>'+[finie?'tâche terminée':'',x.gain>0?'+'+pctTxt(x.gain)+(finie?'':' ce jour-là'):''].filter(Boolean).join(' · ')+'</small></span>'+temps+'</button>';
   }
-  if(x.k==='tache')return '<button type="button" class="hist hist-tache"'+st+' data-hist-t="'+x.t.ligne+'">'+pill+'<span class="n"><i class="hk">✓</i>'+esc(x.t.tache)+
+  if(x.k==='tache')return '<button type="button" class="hist hist-tache'+kc+'"'+st+' data-hist-t="'+x.t.ligne+'">'+pill+'<span class="n"><i class="hk">✓</i>'+esc(x.t.tache)+
     '<small>'+(x.occ?'faite '+(x.occ==='journee'?'dans la journée':'le '+NOM_MOMENT[x.occ]):'tâche terminée')+'</small></span>'+temps+'</button>';
   if(x.k==='elan'){
     var titres=titresDuJour(x.e,x.a.jour);
