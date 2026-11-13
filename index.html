@@ -401,6 +401,11 @@ body.copie #d{opacity:.55}
 .pm-doms{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .pm-etats{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .t.evt .nm,.t.evt .tag{cursor:pointer}
+.rlie{display:flex;flex-direction:column;gap:6px}
+.rlie-r{display:flex;flex-direction:column;align-items:flex-start;text-align:left;font:inherit;font-size:14px;color:var(--ink);background:#FFF1D6;border:0;border-radius:12px;padding:7px 11px;cursor:pointer}
+.rlie-r small{font-size:12px;color:var(--t2)}
+.rlie-nv{font:inherit;font-size:14px;border:1.5px dashed var(--line2);border-radius:12px;background:var(--card);color:var(--ink);padding:7px 10px}
+.rlie-e .fx-chip{font-size:12px;padding:4px 10px}
 .pm-etats button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--card);color:var(--t2);border-radius:999px;padding:5px 11px;cursor:pointer}
 .pm-etats button.on{background:#F3A155;color:var(--ink);font-weight:600;border-color:var(--bord)}
 .pm-etats .pm-modif{margin-left:auto;background:transparent;border-color:transparent}
@@ -1523,6 +1528,7 @@ function maj(){
 }
 
 function rendre(){
+  majRappelsLies();
   dateAff();
   var act=D.taches.filter(function(t){return t.statut!=='sommeil'})
     .reduce(function(a,t){return a.concat(estMulti(t)?foisDuJour(t):[vueAuto(t)])},[]);
@@ -1920,6 +1926,7 @@ function ouvrirFiche(l){
     '<input type="range" min="0" max="100" step="5" value="'+pct+'" data-c="avancement" aria-label="Avancement" style="--rp:'+pct+'%">'+
     '<div class="fx-lab">Projet</div>'+blocProjet('tache'))+
     '<textarea class="fx-note" data-c="note" placeholder="Une note…" rows="2">'+esc(t.note)+'</textarea>'+
+    blocRappelsLies(t.id,t.projet)+
     '<details class="fx-plus"'+(ficheDetails?' open':'')+'><summary>Plus de détails</summary>'+
       '<div class="row2"><div><label>Durée (min)</label><input type="number" min="0" step="5" data-c="duree_min" value="'+(t.duree||'')+'"></div>'+
       '<div><label>Date limite</label><input type="date" data-c="echeance" value="'+esc(t.echeance)+'"></div></div>'+
@@ -2716,6 +2723,56 @@ function sectionRappels(pid){
 }
 function jourPlus(j,n){var d=parseIso(j);d.setDate(d.getDate()+n);return iso(d)}
 function rappel(id){return D.rappels.filter(function(r){return r.id===id})[0]}
+var ECARTS=[[-7,'1 semaine avant'],[-2,'2 jours avant'],[-1,'la veille'],[0,'le jour même'],[1,'le lendemain']];
+function libEcart(e){var x=ECARTS.filter(function(y){return y[0]===e})[0];return x?x[1]:(e<0?(-e)+' jours avant':e+' jours après')}
+function jourLie(r){
+  if(!r.lien)return '';
+  var dec=function(j){return jourPlus(j,r.ecart||0)};
+  var occ=D.evenements.filter(function(o){return o.id===r.lien&&o.jour}).map(function(o){return o.jour}).sort();
+  if(occ.length){for(var i=0;i<occ.length;i++)if(dec(occ[i])>=AUJ)return dec(occ[i]);return dec(occ[occ.length-1]);}
+  var t=D.taches.filter(function(x){return x.id===r.lien})[0];
+  var base=t&&((t.moment&&t.jour)||t.souhaitee||t.echeance);
+  return base?dec(base):'';
+}
+function majRappelsLies(){D.rappels.forEach(function(r){var j=jourLie(r);if(j)r.jours=[j]})}
+function titreLien(r){
+  var o=D.evenements.filter(function(x){return x.id===r.lien})[0];if(o)return o.titre;
+  var t=D.taches.filter(function(x){return x.id===r.lien})[0];return t?t.tache:'';
+}
+function rappelsLiesA(lien){return lien?D.rappels.filter(function(r){return r.lien===lien}):[]}
+var rlieEcart=-1;
+function blocRappelsLies(lien,pid){
+  var rs=rappelsLiesA(lien);
+  return '<div class="fx-lab">📌 Rappels</div><div class="rlie" data-rlie="'+esc(lien)+'" data-rlie-p="'+esc(pid||'')+'">'+
+    rs.map(function(r){return '<button type="button" class="rlie-r" data-rlie-ouvrir="'+esc(r.id)+'"><span>'+esc(r.texte)+'</span><small>'+libEcart(r.ecart)+(r.jours[0]?' · '+dateCourte(r.jours[0]):'')+'</small></button>'}).join('')+
+    '<input type="text" class="rlie-nv" data-rlie-nv placeholder="＋ Un rappel…" aria-label="Nouveau rappel">'+
+    '<div class="fx-chips rlie-e">'+ECARTS.map(function(x){return '<button type="button" class="fx-chip'+(x[0]===rlieEcart?' on':'')+'" data-rlie-e="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div></div>';
+}
+function redessinerFicheLiee(){
+  if(fiche.dataset.mode==='evt'){var o=D.evenements.filter(function(x){return x.id===fiche.dataset.ev&&x.jour===fiche.dataset.jour})[0];if(o)ouvrirEvt(o);}
+  else if(fiche.dataset.l)ouvrirFiche(Number(fiche.dataset.l));
+}
+function ajouterRappelLie(bloc,texte){
+  texte=texte.trim();if(!texte)return;
+  if(sansEmoji(texte)===texte)texte='📌 '+texte;
+  var r={id:'',texte:texte,projet:bloc.dataset.rlieP||'',jours:[],statut:'actif',note:'',vus:[],debut:'',fin:'',lien:bloc.dataset.rlie,ecart:rlieEcart};
+  var j=jourLie(r);if(j)r.jours=[j];
+  D.rappels.push(r);
+  google.script.run.withSuccessHandler(function(id){r.id=id;rendre();redessinerFicheLiee();}).withFailureHandler(echecServeur)
+    .ajouterRappel(texte,{projet:r.projet,jours:r.jours,lien:r.lien,ecart:r.ecart});
+  rendre();redessinerFicheLiee();
+  setTimeout(function(){var i=fiche.querySelector('[data-rlie-nv]');if(i)i.focus()},30);
+}
+fiche.addEventListener('click',function(e){
+  var o=e.target.closest('[data-rlie-ouvrir]');
+  if(o){if(o.dataset.rlieOuvrir)ouvrirRappel(o.dataset.rlieOuvrir);return;}
+  var c=e.target.closest('[data-rlie-e]');
+  if(c){rlieEcart=Number(c.dataset.rlieE);[].forEach.call(fiche.querySelectorAll('[data-rlie-e]'),function(b){b.classList.toggle('on',b===c)});}
+});
+fiche.addEventListener('keydown',function(e){
+  var i=e.target.closest&&e.target.closest('[data-rlie-nv]');
+  if(i&&e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();ajouterRappelLie(i.closest('[data-rlie]'),i.value);}
+});
 function rappelsDuJour(j){
   return D.rappels.filter(function(r){
     if(r.statut==='fait'||rappelFini(r,j))return false;
@@ -2724,6 +2781,7 @@ function rappelsDuJour(j){
 }
 function rappelPlusTard(r,j){return !r.jours.length&&!!r.debut&&r.debut>(j||AUJ)}
 function infoJours(r){
+  if(r.lien&&titreLien(r))return libEcart(r.ecart)+' · '+titreLien(r)+(r.jours[0]?' ('+dateCourte(r.jours[0])+')':'');
   if(!r.jours.length)return (rappelPlusTard(r,AUJ)?'dès le '+dateCourte(r.debut):'sans date')+(r.fin?' · jusqu’au '+dateCourte(r.fin):'');
   var futurs=r.jours.filter(function(j){return j>=AUJ});
   return r.jours.length>1?r.jours.length+' dates'+(futurs.length?' · prochaine '+dateCourte(futurs[0]):''):dateCourte(r.jours[0]);
@@ -2732,7 +2790,7 @@ function ligneRappel(r,o){
   o=o||{};
   return '<div class="rap" data-rap="'+esc(r.id)+'"><div class="rap-c" data-rap-ouvre>'+
     '<div class="rap-x">'+avecEmoji(esc(r.texte))+'</div>'+
-    '<div class="rap-i">'+(o.sansProjet?'':tagProjet({projet:r.projet}))+'<span class="rap-d">'+(r.jours.indexOf(jourVu)>=0&&!o.sansProjet?'aujourd’hui':infoJours(r))+'</span></div>'+
+    '<div class="rap-i">'+(o.sansProjet?'':tagProjet({projet:r.projet}))+'<span class="rap-d">'+(r.jours.indexOf(jourVu)>=0&&!o.sansProjet&&!r.lien?'aujourd’hui':infoJours(r))+'</span></div>'+
     '</div>'+(o.sansBouton?'':'<button type="button" class="rap-ok" data-rap-ok title="Je m’en souviens, le ranger">✓</button>')+'</div>';
 }
 function renderRappels(){
@@ -2768,6 +2826,9 @@ function ouvrirRappel(id){
   fiche.innerHTML='<div class="fx">'+
     '<div class="fx-lab" style="margin-top:2px">📌 Rappel'+(r.statut==='fait'?' · rangé':'')+'</div>'+
     '<textarea class="fx-titre" data-rapt rows="1" aria-label="Le rappel">'+esc(r.texte)+'</textarea>'+
+    (r.lien?'<div class="fx-lab">Quand ?</div><div class="fx-chips">'+ECARTS.map(function(x){return '<button type="button" class="fx-chip'+(x[0]===r.ecart?' on':'')+'" data-rapecart="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>'+
+      '<div class="fx-cap">'+(titreLien(r)?'📅 '+esc(titreLien(r))+(r.jours[0]?' · '+dateLong(r.jours[0]):''):'lié à un événement qui n’est plus dans le calendrier')+'</div>'+
+      '<button type="button" class="fx-lien" data-rapdelier>Ne plus le lier</button>':
     '<div class="fx-lab">Quels jours ?</div>'+
     '<div class="fx-chips">'+(r.jours.length?r.jours.map(function(j){
       return '<button type="button" class="fx-chip on" data-rapx="'+j+'" aria-label="Retirer ce jour">'+esc(dateCourte(j))+(r.vus.indexOf(j)>=0?' ✓':'')+' ×</button>';
@@ -2776,8 +2837,8 @@ function ouvrirRappel(id){
       (r.jours.indexOf(AUJ)<0?'<button type="button" class="fx-chip" data-rapj="'+AUJ+'">+ Aujourd’hui</button>':'')+
       (r.jours.indexOf(demain)<0?'<button type="button" class="fx-chip" data-rapj="'+demain+'">+ Demain</button>':'')+
       '<input type="date" class="fx-date" data-rapd aria-label="Ajouter une date"></div>'+
-    '<div class="fx-cap">'+(r.jours.length?'affiché seulement ces jours-là':'sans date : affiché chaque jour, jusqu’à ce que tu le ranges')+'</div>'+
-    (r.jours.length?'':'<div class="fx-lab">À partir du</div><input type="date" class="fx-date" data-rapdeb value="'+esc(r.debut||'')+'" aria-label="À partir du">'+
+    '<div class="fx-cap">'+(r.jours.length?'affiché seulement ces jours-là':'sans date : affiché chaque jour, jusqu’à ce que tu le ranges')+'</div>')+
+    (r.jours.length||r.lien?'':'<div class="fx-lab">À partir du</div><input type="date" class="fx-date" data-rapdeb value="'+esc(r.debut||'')+'" aria-label="À partir du">'+
       '<div class="fx-cap">'+(r.debut?'caché jusqu’au '+dateLong(r.debut)+' (efface la date pour l’afficher dès maintenant)':'vide : affiché dès maintenant')+'</div>'+
       '<div class="fx-lab">Jusqu’au</div><input type="date" class="fx-date" data-rapfin value="'+esc(r.fin||'')+'" aria-label="Jusqu’au">'+
       '<div class="fx-cap">'+(r.fin?'plus affiché après le '+dateLong(r.fin):'vide : affiché jusqu’à ce que tu le ranges')+'</div>')+
@@ -2800,6 +2861,9 @@ fiche.addEventListener('click',function(e){
   var r=rappel(fiche.dataset.rap);if(!r)return;
   var c=e.target.closest('[data-rapc]');
   if(c){projetsOuverts=false;changerRappel(r,{projet:c.dataset.v});return;}
+  var ec=e.target.closest('[data-rapecart]');
+  if(ec){r.ecart=Number(ec.dataset.rapecart);var jl=jourLie(r);changerRappel(r,jl?{ecart:r.ecart,jours:[jl]}:{ecart:r.ecart});return;}
+  if(e.target.closest('[data-rapdelier]')){changerRappel(r,{lien:''});return;}
   var x=e.target.closest('[data-rapx]');
   if(x){changerRappel(r,{jours:r.jours.filter(function(j){return j!==x.dataset.rapx})});return;}
   var j=e.target.closest('[data-rapj]');
@@ -2865,7 +2929,7 @@ function ouvrirEvt(o){
   fiche.innerHTML='<div class="fx">'+
     '<div class="fx-lab" style="margin-top:2px">'+dateLong(o.jour)+(o.heure?' · '+heureAff(o.heure):'')+(o.source?' · '+esc(o.source):'')+'</div>'+
     '<div class="fx-titre-fixe">'+esc(o.titre)+'</div>'+(o.lieu?'<div class="fx-lab" style="margin-top:2px">📍 '+esc(o.lieu)+'</div>':'')+
-    '<div class="fx-lab">Projets'+(nb>1?' · toutes les séances':'')+'</div>'+chips+
+    '<div class="fx-lab">Projets'+(nb>1?' · toutes les séances':'')+'</div>'+chips+blocRappelsLies(o.id,sel[0]||'')+
     '<div class="btns">'+(o.perso?'<button type="button" class="doux" data-evbase>↺ Projets de base</button>':'')+
     '<button type="button" class="pri" data-act="fermer">OK</button></div></div>';
   fiche.classList.add('on');scrim.classList.add('on');
