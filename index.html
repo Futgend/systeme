@@ -400,6 +400,7 @@ body.copie #d{opacity:.55}
 .dbadges{margin-left:7px;font-size:12px;opacity:.85}
 .pm-doms{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .pm-etats{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.t.evt .nm,.t.evt .tag{cursor:pointer}
 .pm-etats button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--card);color:var(--t2);border-radius:999px;padding:5px 11px;cursor:pointer}
 .pm-etats button.on{background:#F3A155;color:var(--ink);font-weight:600;border-color:var(--bord)}
 .pm-etats .pm-modif{margin-left:auto;background:transparent;border-color:transparent}
@@ -1783,6 +1784,8 @@ document.addEventListener('click',function(e){
     poserParticipation(idp,pb.hasAttribute('data-part-reset')?(ob&&ob.facultatif?'choisi':''):pb.dataset.part);
     return;
   }
+  var evn=(e.target.closest('.t.evt .nm')||e.target.closest('.t.evt .tag'))&&evtDuJour(e.target.closest('.t.evt').dataset.ev);
+  if(evn){ouvrirEvt(evn);return;}
   if(e.target.closest('.t.evt'))return;
 
 
@@ -2851,6 +2854,39 @@ fiche.addEventListener('click',function(e){
   document.getElementById('hint').textContent='« '+elan(eid).nom+' » posé · '+MOM.filter(function(x){return x.k===m})[0].n.toLowerCase()+'.';
 });
 
+function ouvrirEvt(o){
+  fiche.dataset.l='';fiche.dataset.mode='evt';fiche.dataset.ev=o.id;fiche.dataset.jour=o.jour;
+  var sel=projetsEvt(o),nb=D.evenements.filter(function(x){return x.id===o.id}).length;
+  var chips='<div class="fx-chips">'+D.projets.filter(function(p){return p.forme!=='domaine'&&(etatP(p)==='encours'||sel.indexOf(p.id)>=0)}).map(function(p){
+    return '<button type="button" class="fx-chip proj'+(sel.indexOf(p.id)>=0?' on':'')+'" data-evp="'+esc(p.id)+'" style="'+varsCouleur(couleurProjet(p.id))+'">'+(p.icone?p.icone+' ':'')+esc(p.nom)+'</button>';
+  }).join('')+'</div>';
+  fiche.innerHTML='<div class="fx">'+
+    '<div class="fx-lab" style="margin-top:2px">'+dateLong(o.jour)+(o.heure?' · '+heureAff(o.heure):'')+(o.source?' · '+esc(o.source):'')+'</div>'+
+    '<div class="fx-titre-fixe">'+esc(o.titre)+'</div>'+(o.lieu?'<div class="fx-lab" style="margin-top:2px">📍 '+esc(o.lieu)+'</div>':'')+
+    '<div class="fx-lab">Projets'+(nb>1?' · toutes les séances':'')+'</div>'+chips+
+    '<div class="btns">'+(o.perso?'<button type="button" class="doux" data-evbase>↺ Projets de base</button>':'')+
+    '<button type="button" class="pri" data-act="fermer">OK</button></div></div>';
+  fiche.classList.add('on');scrim.classList.add('on');
+}
+fiche.addEventListener('click',function(e){
+  if(fiche.dataset.mode!=='evt')return;
+  var id=fiche.dataset.ev,o=D.evenements.filter(function(x){return x.id===id&&x.jour===fiche.dataset.jour})[0];if(!o)return;
+  var b=e.target.closest('[data-evp]');
+  if(b){
+    var sel=projetsEvt(o).slice(),i=sel.indexOf(b.dataset.evp);
+    if(i>=0)sel.splice(i,1);else sel.push(b.dataset.evp);
+    if(!sel.length){revenirProjetsBase(id);return;}
+    D.evenements.forEach(function(x){if(x.id===id){x.projets=sel.slice();x.projet=sel[0];x.perso=true;}});
+    D.archives.forEach(function(a){if(a.evenement===id)a.projets=sel.slice();});
+    google.script.run.withFailureHandler(echecServeur).setProjetsEvenement(id,sel,o.titreOrigine||o.titre);
+    rendre();ouvrirEvt(o);return;
+  }
+  if(e.target.closest('[data-evbase]'))revenirProjetsBase(id);
+});
+function revenirProjetsBase(id){
+  fermerFiche();
+  google.script.run.withSuccessHandler(function(){charger()}).withFailureHandler(echecServeur).setProjetsEvenement(id,null);
+}
 function ouvrirAvancee(eid,jour){
   var e=elan(eid),a=avanceeDe(eid,jour);if(!e||!a)return;
   fiche.dataset.l='';fiche.dataset.mode='avancee';fiche.dataset.elan=eid;fiche.dataset.jour=jour;
