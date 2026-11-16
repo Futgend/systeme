@@ -4072,11 +4072,11 @@ function lancerSuggestions(type,q){
       if(n!==suggN||!zone.isConnected)return;
       var cible=type==='livre'?nouveauLivre:nouveauMedia;
       cible.resultats=rs;
-      zone.innerHTML=rs.length?rs.map(function(r,i){
+      zone.innerHTML=(type==='livre'?noteHorsBnf(rs):'')+(rs.length?rs.map(function(r,i){
         var img=r.affiche||r.couverture,srcs=type==='livre'?sourcesCouv(r.couverture,r.isbn):(img?[img]:[]);
         return '<button type="button" class="sugg-l" data-sg="'+i+'"><span class="sugg-i">'+imgCouv(srcs)+'</span>'+
           '<span class="sugg-t">'+esc(r.titre||('ISBN '+(r.isbn||'')))+'<small>'+esc(type==='livre'?[r.auteur].concat(infoEdition(r)).filter(Boolean).join(' · '):[r.auteur,r.annee].filter(Boolean).join(' · '))+'</small></span></button>';
-      }).join(''):'<div class="fx-cap">Rien trouvé : tu peux l’ajouter à la main.</div>';
+      }).join(''):'<div class="fx-cap">Rien trouvé : tu peux l’ajouter à la main.</div>');
     };
     var ko=function(e){if(n===suggN&&zone.isConnected)zone.innerHTML='<div class="fx-cap">'+esc(e.message||'Recherche indisponible')+' Tu peux l’ajouter à la main.</div>';};
     var run=google.script.run.withSuccessHandler(ok).withFailureHandler(ko);
@@ -4770,6 +4770,7 @@ function ouvrirNouveauLivre(){
 function infoEdition(r){
   return r.editeur||r.collection||r.edition?[r.editeur,r.collection,r.edition?r.edition+(r.reimpression?' (réimpr.)':''):'',r.pages?r.pages+' p.':''].filter(Boolean):(r.pages?[r.annee,r.pages+' p.'].filter(Boolean):(r.annee?[r.annee]:[]));
 }
+function noteHorsBnf(rs){return rs.some(function(r){return r.horsBnf})?'<div class="fx-cap">Catalogue de la BnF injoignable pour l’instant : liste incomplète (l’ISBN au dos du livre marche toujours).</div>':''}
 function champsEdition(r){return {editeur:r.editeur||'',collection:r.collection||'',edition:r.edition||'',isbn:r.isbn||''}}
 var edResultats=[],edN=0,edT=null;
 function ouvrirEditions(id){
@@ -4792,11 +4793,11 @@ function chercherEditions(q,attente){
     google.script.run.withSuccessHandler(function(rs){
       var zone=z(),l=livre(id);if(!zone||!l)return;
       edResultats=rs;
-      zone.innerHTML=rs.length?rs.map(function(r,i){
+      zone.innerHTML=noteHorsBnf(rs)+(rs.length?rs.map(function(r,i){
         var mienne=r.isbn&&r.isbn===l.isbn;
         return '<button type="button" class="sugg-l'+(mienne?' on':'')+'" data-ed-pick="'+i+'"><span class="sugg-i">'+imgCouv(sourcesCouv(r.couverture,r.isbn))+'</span>'+
           '<span class="sugg-t">'+esc(r.titre||('ISBN '+r.isbn))+'<small>'+esc([r.auteur].concat(infoEdition(r)).filter(Boolean).join(' · '))+'</small></span>'+(mienne?'<span class="vs-plus">✓</span>':'')+'</button>';
-      }).join(''):'<div class="fx-cap">Aucune édition trouvée.</div>';
+      }).join(''):'<div class="fx-cap">Aucune édition trouvée.</div>');
     }).withFailureHandler(function(e){var zone=z();if(zone)zone.innerHTML='<div class="fx-cap">'+esc(e.message||'Recherche indisponible')+'</div>';}).chercherLivres(q);
   },attente);
 }
@@ -4848,7 +4849,7 @@ function chercherLecture(q){
     google.script.run.withSuccessHandler(function(rs){
       var z=zone();if(!z)return;
       lvResultats=rs.filter(function(r){return r.titre&&!D.livres.some(function(l){return normTitre(l.titre)===normTitre(r.titre)})});
-      z.outerHTML=lvResultats.length?'<div id="lv-web"><div class="fx-lab">Ajouter à ta bibliothèque</div><div class="sugg">'+lvResultats.map(function(r,i){
+      z.outerHTML=lvResultats.length?'<div id="lv-web"><div class="fx-lab">Ajouter à ta bibliothèque</div>'+noteHorsBnf(rs)+'<div class="sugg">'+lvResultats.map(function(r,i){
         return '<button type="button" class="sugg-l" data-lv-add="'+i+'"><span class="sugg-i">'+imgCouv(sourcesCouv(r.couverture,r.isbn))+'</span>'+
           '<span class="sugg-t">'+esc(r.titre)+'<small>'+esc([r.auteur].concat(infoEdition(r)).filter(Boolean).join(' · '))+'</small></span><span class="vs-plus">＋</span></button>';
       }).join('')+'</div></div>':'<div id="lv-web" class="fx-cap">'+(locaux.length?'Rien d’autre en ligne.':'Rien trouvé.')+'</div>';
