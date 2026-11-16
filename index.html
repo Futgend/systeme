@@ -382,6 +382,13 @@ body.copie #d{opacity:.55}
 .couvs{display:flex;gap:6px;margin-top:10px}
 .lu-mini{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--t2);background:var(--card);border-radius:10px;padding:3px 10px 3px 3px}
 .lu-mini .couv.mini{width:18px}
+button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
+.lu-n{font-style:normal;font-size:11px}
+.session button.i{font:inherit;font-size:13px;text-align:left;background:transparent;border:0;padding:0;cursor:pointer}
+.ses-plus{font-style:normal;opacity:.55}
+.ses-tete{display:flex;align-items:center;gap:10px}.ses-tete .couv.mini{width:34px;flex-shrink:0}
+.ses-note{min-height:120px}
+.hist-note{display:block;white-space:pre-wrap}
 
 .lv-tete{display:flex;gap:14px;align-items:flex-start;margin-top:6px}
 .lv-id{flex:1;min-width:0}
@@ -1261,7 +1268,8 @@ function tuileLivre(l){
 function lusDuJour(){
   var ls=D.lectures.filter(function(x){return x.jour===jourVu}).map(function(x){return livre(x.livre)}).filter(Boolean);
   return ls.length?'<div class="livres">'+ls.map(function(l){
-    return '<span class="lu-mini">'+couv(l,'mini')+'<span>'+esc(l.titre)+'</span></span>';
+    var x=D.lectures.filter(function(y){return y.livre===l.id&&y.jour===jourVu})[0];
+    return '<button type="button" class="lu-mini" data-sesnote="livre|'+esc(l.id)+'" data-jour="'+jourVu+'">'+couv(l,'mini')+'<span>'+esc(l.titre)+'</span>'+(x&&x.note?'<i class="lu-n">📝</i>':'')+'</button>';
   }).join('')+'</div>':'';
 }
 function derniereFois(pid){
@@ -2977,6 +2985,47 @@ function revenirProjetsBase(id){
   fermerFiche();
   google.script.run.withSuccessHandler(function(){charger()}).withFailureHandler(echecServeur).setProjetsEvenement(id,null);
 }
+function sessionDe(kind,id,jour){return kind==='livre'?D.lectures.filter(function(x){return x.livre===id&&x.jour===jour})[0]:visionneDe(id,jour)}
+function ouvrirNoteSession(kind,id,jour,retour){
+  var x=sessionDe(kind,id,jour),obj=kind==='livre'?livre(id):mediaParId(id);if(!x||!obj)return;
+  fiche.dataset.l='';fiche.dataset.mode='note-session';fiche.dataset.kind=kind;fiche.dataset.sid=id;fiche.dataset.jour=jour;fiche.dataset.retour=retour?'1':'';
+  var eps=kind==='media'&&obj.type==='serie'?epsDuJour(id,jour):[];
+  fiche.innerHTML='<div class="fx">'+
+    '<div class="fx-lab" style="margin-top:2px">'+(kind==='livre'?'📖 Lecture':TYPES_M[obj.type].emoji+' Visionnage')+' · '+dateLong(jour)+'</div>'+
+    '<div class="ses-tete">'+(kind==='livre'?couv(obj,'mini'):couvMedia(obj,'mini'))+'<div class="fx-titre-fixe">'+esc(obj.titre)+(eps.length?' <small>'+esc(labelEps(eps))+'</small>':'')+'</div></div>'+
+    '<div class="fx-lab">📝 Mes notes</div>'+
+    '<textarea class="fx-note ses-note" data-sesnote-t rows="6" placeholder="'+(kind==='livre'?'Ce que j’ai lu, ce que j’en retiens…':'Ce que j’ai vu, ce que j’en retiens…')+'">'+esc(x.note||'')+'</textarea>'+
+    '<div class="btns"><button type="button" class="pri" data-sesnote-ok>OK</button></div></div>';
+  fiche.classList.add('on');scrim.classList.add('on');
+  var t=fiche.querySelector('[data-sesnote-t]');ajusterHauteur(t);
+}
+var noteSesMinuteur=null;
+function envoyerNoteSession(){
+  clearTimeout(noteSesMinuteur);
+  var t=fiche.querySelector('[data-sesnote-t]');if(!t||fiche.dataset.mode!=='note-session')return;
+  var kind=fiche.dataset.kind,id=fiche.dataset.sid,jour=fiche.dataset.jour,x=sessionDe(kind,id,jour);if(!x||x.note===t.value)return;
+  x.note=t.value;garderCopie();
+  if(kind==='livre')google.script.run.withFailureHandler(echecServeur).enregistrerLecture(id,jour,{note:x.note});
+  else google.script.run.withFailureHandler(echecServeur).enregistrerVisionnage(id,jour,{note:x.note});
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-sesnote]');if(!b)return;
+  var p=b.dataset.sesnote.split('|');
+  e.stopPropagation();
+  if(fiche.dataset.mode==='note-session')envoyerNoteSession();
+  ouvrirNoteSession(p[0],p.slice(1).join('|'),b.dataset.jour,!!b.dataset.retour);
+},true);
+fiche.addEventListener('input',function(e){
+  if(e.target.hasAttribute('data-sesnote-t')){ajusterHauteur(e.target);clearTimeout(noteSesMinuteur);noteSesMinuteur=setTimeout(envoyerNoteSession,1200);}
+});
+fiche.addEventListener('change',function(e){if(e.target.hasAttribute('data-sesnote-t'))envoyerNoteSession();});
+fiche.addEventListener('click',function(e){
+  if(fiche.dataset.mode!=='note-session'||!e.target.closest('[data-sesnote-ok]'))return;
+  envoyerNoteSession();
+  var kind=fiche.dataset.kind,id=fiche.dataset.sid,retour=fiche.dataset.retour;
+  if(retour){if(kind==='livre')ouvrirLivre(id);else{var m=mediaParId(id);if(m)ouvrirMedia(m.type,id);}rendre();}
+  else fermerFiche();
+});
 function ouvrirAvancee(eid,jour){
   var e=elan(eid),a=avanceeDe(eid,jour);if(!e||!a)return;
   fiche.dataset.l='';fiche.dataset.mode='avancee';fiche.dataset.elan=eid;fiche.dataset.jour=jour;
@@ -3335,6 +3384,11 @@ function evtsAVenirProjet(pid){
       '<span class="n">'+esc(o.titre)+'</span><span class="s">'+(o.facultatif&&!participation(o.id,o.jour)?'possible':esc(o.source||''))+'</span></div>';
   }).join(''):'';
 }
+function notesDuJour(e,jour){
+  var l=e.lien==='livres'?D.lectures.filter(function(x){return x.jour===jour&&x.note}).map(function(x){var b=livre(x.livre);return b?[b.titre,x.note]:null}):
+    (e.lien==='medias'?D.visionnages.filter(function(v){return v.jour===jour&&v.note}).map(function(v){var m=mediaParId(v.media);return m?[m.titre,v.note]:null}):[]);
+  return l.filter(Boolean).map(function(x){return '<small class="hist-note">📝 <b>'+esc(x[0])+'</b> · '+esc(x[1])+'</small>'}).join('');
+}
 function titresDuJour(e,jour){
   if(e.lien==='livres')return D.lectures.filter(function(l){return l.jour===jour}).map(function(l){return livre(l.livre)}).filter(Boolean).map(function(l){return '📖 '+l.titre});
   if(e.lien==='medias')return D.visionnages.filter(function(v){return v.jour===jour}).map(function(v){return mediaParId(v.media)}).filter(Boolean)
@@ -3395,7 +3449,7 @@ function historiqueProjet(pid){
       var titres=titresDuJour(e,x.a.jour);
       return '<button type="button" class="hist hist-elan" data-hist-e="'+esc(x.a.elan)+'" data-hist-j="'+x.a.jour+'">'+
         '<span class="d">'+dateEvt(x.jour)+'</span><span class="n"><i class="hk">↻</i>'+esc(e.nom)+(x.a.variante?' · '+esc(x.a.variante):'')+
-        (titres.length?'<small class="hist-titres">'+titres.map(esc).join(' · ')+'</small>':'')+
+        (titres.length?'<small class="hist-titres">'+titres.map(esc).join(' · ')+'</small>':'')+notesDuJour(e,x.a.jour)+
         (x.a.note?'<small>'+esc(x.a.note)+'</small>':'')+'</span><span class="s">'+h(x.min)+'</span></button>';
     }
     return '<button type="button" class="hist hist-evt" data-hist-ev="'+esc(x.o.id)+'" data-hist-j="'+x.o.jour+'"><span class="d">'+dateEvt(x.jour)+'</span><span class="n"><i class="hk">✓</i>'+esc(x.o.titre)+
@@ -3495,11 +3549,11 @@ function joursJournal(){
   });
   D.lectures.forEach(function(l){
     var lv=livre(l.livre);
-    if(lv&&!elansFaits[l.jour+'|livres'])ajouter(l.jour,{k:'lu',titre:'📖 '+lv.titre,min:l.minutes||0,pid:(lv.projets||[])[0]||'',ordre:'3'});
+    if(lv&&!elansFaits[l.jour+'|livres'])ajouter(l.jour,{k:'lu',titre:'📖 '+lv.titre,note:l.note||'',min:l.minutes||0,pid:(lv.projets||[])[0]||'',ordre:'3'});
   });
   D.visionnages.forEach(function(v){
     var m=mediaParId(v.media);
-    if(m&&!elansFaits[v.jour+'|medias'])ajouter(v.jour,{k:'lu',titre:TYPES_M[m.type].emoji+' '+m.titre,min:0,pid:(m.projets||[])[0]||'',ordre:'3'});
+    if(m&&!elansFaits[v.jour+'|medias'])ajouter(v.jour,{k:'lu',titre:TYPES_M[m.type].emoji+' '+m.titre,note:v.note||'',min:0,pid:(m.projets||[])[0]||'',ordre:'3'});
   });
   return jours;
 }
@@ -3557,10 +3611,10 @@ function ligneJournal(x){
   if(x.k==='elan'){
     var titres=titresDuJour(x.e,x.a.jour);
     return '<button type="button" class="hist hist-elan"'+st+' data-hist-e="'+esc(x.a.elan)+'" data-hist-j="'+x.a.jour+'">'+pill+'<span class="n"><i class="hk">↻</i>'+esc(x.e.nom)+(x.a.variante?' · '+esc(x.a.variante):'')+
-      (titres.length?'<small class="hist-titres">'+titres.map(esc).join(' · ')+'</small>':'')+
+      (titres.length?'<small class="hist-titres">'+titres.map(esc).join(' · ')+'</small>':'')+notesDuJour(x.e,x.a.jour)+
       (x.a.note?'<small>'+esc(x.a.note)+'</small>':'')+'</span>'+temps+'</button>';
   }
-  return '<div class="hist hist-lu"'+st+'>'+pill+'<span class="n">'+esc(x.titre)+'</span>'+temps+'</div>';
+  return '<div class="hist hist-lu"'+st+'>'+pill+'<span class="n">'+esc(x.titre)+(x.note?'<small class="hist-note">📝 '+esc(x.note)+'</small>':'')+'</span>'+temps+'</div>';
 }
 var journalFiltre='tout',journalNb=14;
 function renderJournal(){
@@ -4232,9 +4286,9 @@ function ouvrirMedia(type,id){
     '<button type="button" class="lv-session'+(luJ?' on':'')+'" data-md="session">'+(luJ?'✓ Regardé ':'J’ai regardé ')+nomJourVu()+'</button>'+
     '<div class="fx-lab">Sert à</div>'+blocProjet('media')+
     (ses.length?'<div class="fx-lab">Sessions</div><div class="sessions">'+ses.map(function(x){
-      return '<div class="session"><span class="d">'+dateEvt(x.jour)+'</span><span class="i">'+
-        ([serie?esc(labelEps(epsDuJour(id,x.jour))):(x.pourcent>=100?'en entier':(x.pourcent?'jusqu’à '+x.pourcent+' %':'')),x.note?esc(x.note):''].filter(Boolean).join(' · ')||'regardé')+
-        '</span><button type="button" class="sx" data-md="suppr-session" data-jour="'+x.jour+'" aria-label="Retirer cette session">×</button></div>';
+      return '<div class="session"><span class="d">'+dateEvt(x.jour)+'</span><button type="button" class="i" data-sesnote="media|'+esc(id)+'" data-jour="'+x.jour+'" data-retour="1">'+
+        ([serie?esc(labelEps(epsDuJour(id,x.jour))):(x.pourcent>=100?'en entier':(x.pourcent?'jusqu’à '+x.pourcent+' %':'')),x.note?esc(x.note):''].filter(Boolean).join(' · ')||'regardé')+(x.note?'':' · <i class="ses-plus">📝</i>')+
+        '</button><button type="button" class="sx" data-md="suppr-session" data-jour="'+x.jour+'" aria-label="Retirer cette session">×</button></div>';
     }).join('')+'</div>':'')+
     '<details class="fx-plus"><summary>Plus de détails</summary>'+
       '<label>Adresse de l’affiche</label><input data-mc="affiche" value="'+esc(m.affiche)+'">'+
@@ -4419,7 +4473,8 @@ function derniereVision(jusqua){
 function vusDuJour(){
   var ms=D.visionnages.filter(function(v){return v.jour===jourVu}).map(function(v){return mediaParId(v.media)}).filter(Boolean);
   return ms.length?'<div class="livres">'+ms.map(function(m){
-    return '<span class="lu-mini">'+couvMedia(m,'mini')+'<span>'+esc(m.titre)+'</span></span>';
+    var v=visionneDe(m.id,jourVu);
+    return '<button type="button" class="lu-mini" data-sesnote="media|'+esc(m.id)+'" data-jour="'+jourVu+'">'+couvMedia(m,'mini')+'<span>'+esc(m.titre)+'</span>'+(v&&v.note?'<i class="lu-n">📝</i>':'')+'</button>';
   }).join('')+'</div>':'';
 }
 function decocherVoirSiVide(jour){
@@ -4651,9 +4706,9 @@ function ouvrirLivre(id){
     '<button type="button" class="lv-session'+(luJour?' on':'')+'" data-lv="session">'+(luJour?'✓ Lu ':'J’ai lu ')+nomJourVu()+'</button>'+
     '<div class="fx-lab">Sert à</div>'+blocProjet('livre')+
     (ses.length?'<div class="fx-lab">Sessions</div><div class="sessions">'+ses.map(function(x){
-      return '<div class="session"><span class="d">'+dateEvt(x.jour)+'</span><span class="i">'+
-        ([x.minutes?h(x.minutes):'',x.page?'jusqu’à p. '+x.page:(x.pourcent?x.pourcent+' %':''),x.note?esc(x.note):''].filter(Boolean).join(' · ')||'lu')+
-        '</span><button type="button" class="sx" data-lv="suppr-session" data-jour="'+x.jour+'" aria-label="Retirer cette session">×</button></div>';
+      return '<div class="session"><span class="d">'+dateEvt(x.jour)+'</span><button type="button" class="i" data-sesnote="livre|'+esc(l.id)+'" data-jour="'+x.jour+'" data-retour="1">'+
+        ([x.minutes?h(x.minutes):'',x.page?'jusqu’à p. '+x.page:(x.pourcent?x.pourcent+' %':''),x.note?esc(x.note):''].filter(Boolean).join(' · ')||'lu')+(x.note?'':' · <i class="ses-plus">📝</i>')+
+        '</button><button type="button" class="sx" data-lv="suppr-session" data-jour="'+x.jour+'" aria-label="Retirer cette session">×</button></div>';
     }).join('')+'</div>':'')+
     '<details class="fx-plus"><summary>Plus de détails</summary>'+
       '<div class="row2"><div><label>Nombre de pages</label><input type="number" min="0" data-lc="pages" value="'+(l.pages||'')+'"></div>'+
