@@ -801,10 +801,13 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
 .sugg{display:flex;flex-direction:column;gap:4px;margin:4px 0 6px}
 .sugg-l{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;border-radius:12px;padding:6px 8px;font:inherit;font-size:14px;background:var(--creme);color:var(--ink);cursor:pointer}
 .sugg-l:hover{background:#F5D687}
-.sugg-i{flex:0 0 34px;width:34px;height:50px;border-radius:5px;background:var(--card);overflow:hidden;display:block}
+.sugg-i{flex:0 0 44px;width:44px;height:66px;border-radius:5px;background:var(--card);overflow:hidden;display:block}
 .sugg-i img{width:100%;height:100%;object-fit:cover;display:block}
 .sugg-t{flex:1;min-width:0;font-weight:500;overflow-wrap:anywhere}
 .sugg-t small{display:block;font-size:12px;font-weight:400;color:var(--t2)}
+.sugg-l.on{outline:2px solid #F3A155}
+.lv-ed{font-weight:500}
+.lv-ed-b{display:block;margin:2px 0 4px;padding:0}
 .saisons{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 2px}
 .saisons>span{font-size:13px;color:var(--t2)}
 .compteur{display:inline-flex;align-items:center;gap:6px;background:var(--creme);border-radius:999px;padding:3px 6px}
@@ -4050,7 +4053,7 @@ function lancerSuggestions(type,q){
       zone.innerHTML=rs.length?rs.map(function(r,i){
         var img=r.affiche||r.couverture;
         return '<button type="button" class="sugg-l" data-sg="'+i+'"><span class="sugg-i">'+(img?'<img src="'+esc(img)+'" alt="" loading="lazy" onerror="this.remove()">':'')+'</span>'+
-          '<span class="sugg-t">'+esc(r.titre)+'<small>'+esc([r.auteur,r.annee].filter(Boolean).join(' · '))+'</small></span></button>';
+          '<span class="sugg-t">'+esc(r.titre)+'<small>'+esc(type==='livre'?[r.auteur].concat(infoEdition(r)).filter(Boolean).join(' · '):[r.auteur,r.annee].filter(Boolean).join(' · '))+'</small></span></button>';
       }).join(''):'<div class="fx-cap">Rien trouvé : tu peux l’ajouter à la main.</div>';
     };
     var ko=function(e){if(n===suggN&&zone.isConnected)zone.innerHTML='<div class="fx-cap">'+esc(e.message||'Recherche indisponible')+' Tu peux l’ajouter à la main.</div>';};
@@ -4078,8 +4081,8 @@ fiche.addEventListener('click',function(e){
     document.getElementById('nl-titre').value=l.titre;
     document.getElementById('nl-auteur').value=l.auteur||'';
     nouveauLivre.pagesChoix=l.pages||0;
-    nouveauLivre.choix={annee:l.annee||'',couverture:l.couverture||''};
-    document.getElementById('nl-sugg').innerHTML='<div class="fx-cap">✓ « '+esc(l.titre)+' »'+(l.pages?' · '+l.pages+' pages':'')+' : la couverture sera cherchée toute seule.</div>';
+    nouveauLivre.choix=Object.assign({annee:l.annee||'',couverture:l.couverture||''},champsEdition(l));
+    document.getElementById('nl-sugg').innerHTML='<div class="fx-cap">✓ « '+esc(l.titre)+' »'+(infoEdition(l).length?' · '+esc(infoEdition(l).join(' · ')):'')+'</div>';
   }
 });
 var biblioVue='livres',confirmeMedia=null,mediaOuvert='';
@@ -4698,6 +4701,8 @@ function ouvrirLivre(id){
       '<textarea class="fx-titre" data-lc="titre" rows="1" aria-label="Titre">'+esc(l.titre)+'</textarea>'+
       '<input class="lv-auteur" data-lc="auteur" value="'+esc(l.auteur)+'" placeholder="Auteur" aria-label="Auteur">'+
       (l.annee?'<div class="fx-cap">'+esc(l.annee)+'</div>':'')+
+      (infoEdition(l).length?'<div class="fx-cap lv-ed">'+esc(infoEdition(l).join(' · '))+'</div>':'')+
+      '<button type="button" class="fx-lien lv-ed-b" data-lv-ed>'+(l.editeur?'Changer d’édition':'Choisir mon édition')+'</button>'+
       '<div class="fx-cap">'+(stats||'pas encore de session')+'</div></div></div>'+
     '<div class="fx-lab">Statut</div>'+pastilles('data-lvs','statut',STATUTS_LIVRE,l.statut)+
     '<div class="fx-lab">Où en es-tu ? <b id="lv-txt">'+esc(a.txt)+'</b></div>'+
@@ -4740,6 +4745,52 @@ function ouvrirNouveauLivre(){
   fiche.classList.add('on');scrim.classList.add('on');
   setTimeout(function(){var x=document.getElementById('nl-titre');if(x)x.focus();},60);
 }
+function infoEdition(r){
+  return r.editeur||r.collection||r.edition?[r.editeur,r.collection,r.edition,r.pages?r.pages+' p.':''].filter(Boolean):(r.pages?[r.annee,r.pages+' p.'].filter(Boolean):(r.annee?[r.annee]:[]));
+}
+function champsEdition(r){return {editeur:r.editeur||'',collection:r.collection||'',edition:r.edition||'',isbn:r.isbn||''}}
+var edResultats=[],edN=0,edT=null;
+function ouvrirEditions(id){
+  var l=livre(id);if(!l)return;
+  fiche.dataset.l='';fiche.dataset.mode='editions-livre';fiche.dataset.livre=id;
+  fiche.innerHTML='<div class="fx"><div class="fx-lab" style="margin-top:2px">📚 Mon édition</div>'+
+    '<div class="fx-titre-fixe">'+esc(l.titre)+'</div>'+
+    '<input type="search" class="vs-q" id="ed-q" value="'+esc([l.titre,l.auteur].filter(Boolean).join(' '))+'" autocomplete="off" aria-label="Chercher une édition">'+
+    '<div id="ed-res" class="sugg"><div class="fx-cap">Je cherche les éditions…</div></div>'+
+    '<div class="btns"><button type="button" class="doux" data-ed-retour>Retour</button></div></div>';
+  fiche.classList.add('on');scrim.classList.add('on');
+  chercherEditions(document.getElementById('ed-q').value,0);
+}
+function chercherEditions(q,attente){
+  clearTimeout(edT);q=String(q||'').trim();
+  var n=++edN,id=fiche.dataset.livre;
+  edT=setTimeout(function(){
+    var z=function(){return n===edN&&fiche.dataset.mode==='editions-livre'?document.getElementById('ed-res'):null};
+    if(q.length<2){if(z())z().innerHTML='';return;}
+    google.script.run.withSuccessHandler(function(rs){
+      var zone=z(),l=livre(id);if(!zone||!l)return;
+      edResultats=rs;
+      zone.innerHTML=rs.length?rs.map(function(r,i){
+        var mienne=r.isbn&&r.isbn===l.isbn;
+        return '<button type="button" class="sugg-l'+(mienne?' on':'')+'" data-ed-pick="'+i+'"><span class="sugg-i">'+(r.couverture?'<img src="'+esc(r.couverture)+'" alt="" loading="lazy" onerror="this.remove()">':'')+'</span>'+
+          '<span class="sugg-t">'+esc(r.titre)+'<small>'+esc([r.auteur].concat(infoEdition(r)).filter(Boolean).join(' · '))+'</small></span>'+(mienne?'<span class="vs-plus">✓</span>':'')+'</button>';
+      }).join(''):'<div class="fx-cap">Aucune édition trouvée.</div>';
+    }).withFailureHandler(function(e){var zone=z();if(zone)zone.innerHTML='<div class="fx-cap">'+esc(e.message||'Recherche indisponible')+'</div>';}).chercherLivres(q);
+  },attente);
+}
+fiche.addEventListener('input',function(e){if(e.target.id==='ed-q')chercherEditions(e.target.value,450);});
+fiche.addEventListener('click',function(e){
+  if(fiche.dataset.mode==='livre'&&e.target.closest('[data-lv-ed]')){ouvrirEditions(fiche.dataset.livre);return;}
+  if(fiche.dataset.mode!=='editions-livre')return;
+  var id=fiche.dataset.livre,l=livre(id);if(!l)return;
+  if(e.target.closest('[data-ed-retour]')){ouvrirLivre(id);return;}
+  var b=e.target.closest('[data-ed-pick]');if(!b)return;
+  var r=edResultats[Number(b.dataset.edPick)];if(!r)return;
+  var ch=Object.assign({pages:r.pages||l.pages||0,couverture:r.couverture||l.couverture||''},champsEdition(r));
+  Object.keys(ch).forEach(function(k){l[k]=ch[k]});
+  google.script.run.withFailureHandler(echecServeur).majLivre(id,ch);
+  rendre();ouvrirLivre(id);
+});
 function creerLivre(b){
   var t=document.getElementById('nl-titre').value.trim(),au=document.getElementById('nl-auteur').value.trim();
   if(!t){document.getElementById('nl-err').textContent='Écris d’abord le titre.';return;}
@@ -4748,9 +4799,9 @@ function creerLivre(b){
   google.script.run.withFailureHandler(function(e){b.disabled=false;b.textContent='Ajouter';echecServeur(e);})
     .withSuccessHandler(function(r){
       D.livres.push({id:r.id,titre:t,auteur:au,statut:st,pages:nouveauLivre.pagesChoix||0,page:0,pourcent:0,debut:'',fin:'',note:'',
-        courant:false,projets:pr,couverture:r.couverture||ch.couverture||'',annee:ch.annee||''});
+        courant:false,projets:pr,couverture:r.couverture||ch.couverture||'',annee:ch.annee||'',editeur:ch.editeur||'',collection:ch.collection||'',edition:ch.edition||'',isbn:ch.isbn||''});
       rendre();ouvrirLivre(r.id);
-    }).ajouterLivre(t,au,nouveauLivre.pagesChoix||'',pr.join(', '),st,{annee:ch.annee||'',couverture:ch.couverture||''});
+    }).ajouterLivre(t,au,nouveauLivre.pagesChoix||'',pr.join(', '),st,Object.assign({annee:ch.annee||'',couverture:ch.couverture||''},champsEdition(ch)));
 }
 
 function tuileChoix(l){
@@ -4777,7 +4828,7 @@ function chercherLecture(q){
       lvResultats=rs.filter(function(r){return !D.livres.some(function(l){return normTitre(l.titre)===normTitre(r.titre)})});
       z.outerHTML=lvResultats.length?'<div id="lv-web"><div class="fx-lab">Ajouter à ta bibliothèque</div><div class="sugg">'+lvResultats.map(function(r,i){
         return '<button type="button" class="sugg-l" data-lv-add="'+i+'"><span class="sugg-i">'+(r.couverture?'<img src="'+esc(r.couverture)+'" alt="" loading="lazy" onerror="this.remove()">':'')+'</span>'+
-          '<span class="sugg-t">'+esc(r.titre)+'<small>'+esc([r.auteur,r.annee].filter(Boolean).join(' · '))+'</small></span><span class="vs-plus">＋</span></button>';
+          '<span class="sugg-t">'+esc(r.titre)+'<small>'+esc([r.auteur].concat(infoEdition(r)).filter(Boolean).join(' · '))+'</small></span><span class="vs-plus">＋</span></button>';
       }).join('')+'</div></div>':'<div id="lv-web" class="fx-cap">'+(locaux.length?'Rien d’autre en ligne.':'Rien trouvé.')+'</div>';
     }).withFailureHandler(function(e){
       var z=zone();if(z)z.outerHTML='<div id="lv-web" class="fx-cap">'+esc(e.message||'Recherche en ligne indisponible')+'</div>';
@@ -4812,10 +4863,10 @@ fiche.addEventListener('click',function(e){
       google.script.run.withFailureHandler(function(er){la.disabled=false;la.querySelector('.vs-plus').textContent='＋';echecServeur(er);})
         .withSuccessHandler(function(x){
           D.livres.push({id:x.id,titre:r.titre,auteur:r.auteur,statut:'en cours',pages:r.pages||0,page:0,pourcent:0,debut:jourVu,fin:'',note:'',
-            courant:false,projets:pr,couverture:x.couverture||r.couverture||'',annee:r.annee||''});
+            courant:false,projets:pr,couverture:x.couverture||r.couverture||'',annee:r.annee||'',editeur:r.editeur||'',collection:r.collection||'',edition:r.edition||'',isbn:r.isbn||''});
           basculerLecture(x.id);   // lu aujourd'hui
           ouvrirChoixLecture();
-        }).ajouterLivre(r.titre,r.auteur,r.pages||'',pr.join(', '),'en cours',{annee:r.annee||'',couverture:r.couverture||''});
+        }).ajouterLivre(r.titre,r.auteur,r.pages||'',pr.join(', '),'en cours',Object.assign({annee:r.annee||'',couverture:r.couverture||''},champsEdition(r)));
       return;
     }
     var lr=e.target.closest('[data-lire]');
