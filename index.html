@@ -388,6 +388,12 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
 .ses-plus{font-style:normal;opacity:.55}
 .ses-tete{display:flex;align-items:center;gap:10px}.ses-tete .couv.mini{width:34px;flex-shrink:0}
 .ses-note{min-height:120px}
+.lp{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--t2);margin:10px 0 2px}
+.lp input{width:84px;font:inherit;font-size:16px;padding:6px 8px;border:1.5px solid var(--bord);border-radius:10px;background:var(--card);color:var(--ink)}
+.lp-pct{color:var(--ink);font-weight:600;margin-left:8px}
+.lp>span{margin-right:2px}
+.lp-liste{display:flex;flex-direction:column;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.lp-l{display:flex;gap:10px;align-items:flex-start}.lp-l .couv.mini{width:34px;flex-shrink:0}.lp-l b{font-size:14px}.lp-l .lp{margin-top:4px}
 .hist-note{display:block;white-space:pre-wrap}
 
 .lv-tete{display:flex;gap:14px;align-items:flex-start;margin-top:6px}
@@ -3018,6 +3024,7 @@ function ouvrirNoteSession(kind,id,jour,retour){
   fiche.innerHTML='<div class="fx">'+
     '<div class="fx-lab" style="margin-top:2px">'+(kind==='livre'?'📖 Lecture':TYPES_M[obj.type].emoji+' Visionnage')+' · '+dateLong(jour)+'</div>'+
     '<div class="ses-tete">'+(kind==='livre'?couv(obj,'mini'):couvMedia(obj,'mini'))+'<div class="fx-titre-fixe">'+esc(obj.titre)+(eps.length?' <small>'+esc(labelEps(eps))+'</small>':'')+'</div></div>'+
+    (kind==='livre'?champPage(obj,jour):'')+
     '<div class="fx-lab">📝 Mes notes</div>'+
     '<textarea class="fx-note ses-note" data-sesnote-t rows="6" placeholder="'+(kind==='livre'?'Ce que j’ai lu, ce que j’en retiens…':'Ce que j’ai vu, ce que j’en retiens…')+'">'+esc(x.note||'')+'</textarea>'+
     '<div class="btns"><button type="button" class="pri" data-sesnote-ok>OK</button></div></div>';
@@ -4029,6 +4036,34 @@ function decocherLireSiVide(jour){
     google.script.run.withFailureHandler(echecServeur).majAvancee(el.id,jour,{fait:false});
   }
 }
+function pageLecture(lid,jour,n){
+  var s=lectureDe(lid,jour),l=livre(lid);if(!s||!l)return;
+  n=Math.max(0,Math.round(Number(n)||0));if(l.pages)n=Math.min(n,l.pages);
+  s.page=n;
+  var derniere=D.lectures.filter(function(x){return x.livre===lid}).map(function(x){return x.jour}).sort().pop();
+  if(n&&jour>=derniere){
+    l.page=n;if(!l.debut)l.debut=jour;
+    if(l.pages&&n>=l.pages){l.statut='lu';l.fin=jour;}else if(l.statut!=='en cours')l.statut='en cours';
+  }
+  google.script.run.withFailureHandler(echecServeur).enregistrerLecture(lid,jour,{page:n});
+  rendre();
+}
+function pctPage(l,n){return l.pages&&n?Math.min(100,Math.round(n/l.pages*100))+' %':''}
+function champPage(l,jour){
+  var s=lectureDe(l.id,jour)||{};
+  return '<label class="lp"><span>📖 Jusqu’à la page</span><input type="number" inputmode="numeric" min="0"'+(l.pages?' max="'+l.pages+'"':'')+
+    ' data-lpage="'+esc(l.id)+'" data-jour="'+jour+'" value="'+(s.page||'')+'" placeholder="'+(l.page||'')+'" aria-label="Jusqu’à quelle page">'+
+    (l.pages?'<span>/ '+l.pages+'</span>':'')+'<b class="lp-pct">'+pctPage(l,s.page)+'</b></label>';
+}
+fiche.addEventListener('input',function(e){
+  var i=e.target.closest&&e.target.closest('[data-lpage]');if(!i)return;
+  var l=livre(i.dataset.lpage),b=i.parentNode.querySelector('.lp-pct');if(l&&b)b.textContent=pctPage(l,Number(i.value));
+});
+fiche.addEventListener('change',function(e){
+  var i=e.target.closest&&e.target.closest('[data-lpage]');if(!i)return;
+  pageLecture(i.dataset.lpage,i.dataset.jour,i.value);
+});
+fiche.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.closest&&e.target.closest('[data-lpage]')){e.preventDefault();e.target.blur();}});
 function basculerLecture(lid){
   if(lectureDe(lid,jourVu)){
     D.lectures=D.lectures.filter(function(x){return !(x.livre===lid&&x.jour===jourVu)});
@@ -4870,6 +4905,8 @@ function ouvrirChoixLecture(){
     (ec.length?'<div class="etagere choix">'+ec.map(tuileChoix).join('')+'</div>':'<div class="empty">aucun livre en cours</div>')+
     (autres.length?'<details class="fx-plus"'+(ec.length?'':' open')+'><summary>Commencer un autre livre ('+autres.length+')</summary>'+
       '<div class="etagere choix">'+autres.map(tuileChoix).join('')+'</div></details>':'')+'</div>'+
+    (function(){var lus=D.lectures.filter(function(x){return x.jour===jourVu}).map(function(x){return livre(x.livre)}).filter(Boolean);
+      return lus.length?'<div class="lp-liste">'+lus.map(function(l){return '<div class="lp-l">'+couv(l,'mini')+'<div><b>'+esc(l.titre)+'</b>'+champPage(l,jourVu)+'</div></div>'}).join('')+'</div>':'';})()+
     '<div class="btns"><button type="button" class="doux" data-lv="vers-biblio">Ouvrir la bibliothèque</button>'+
     '<button type="button" class="pri" data-act="fermer">OK</button></div></div>';
   fiche.classList.add('on');scrim.classList.add('on');
