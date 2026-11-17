@@ -415,6 +415,8 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
 .pm-doms{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .pm-etats{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .t.evt .nm,.t.evt .tag{cursor:pointer}
+.ord{font:inherit;font-size:12px;font-weight:600;border:1.5px dashed #2E2622;border-radius:999px;background:#FFF1D6;color:#2E2622;padding:3px 10px;cursor:pointer;margin-top:4px}
+.ord.on{border-style:solid;background:#E4EFEA;font-weight:500;cursor:default}
 .rlie{display:flex;flex-direction:column;gap:6px}
 .rlie-r{display:flex;flex-direction:column;align-items:flex-start;text-align:left;font:inherit;font-size:14px;color:var(--ink);background:#FFF1D6;border:0;border-radius:12px;padding:7px 11px;cursor:pointer}
 .rlie-r small{font-size:12px;color:var(--t2)}
@@ -1393,7 +1395,7 @@ function ligneEvt(o){
     '<button type="button" class="part" data-part="non">Pas cette fois</button>'))+arch;
   return '<div class="t evt'+(o.facultatif?' facu':'')+(st?' '+st:'')+(evtFini(o)?' fini':'')+'" data-ev="'+esc(o.id)+'" title="'+esc([o.lieu,o.source].filter(Boolean).join(' · '))+'">'+
     heuresEvt(o)+
-    corpsLigne(esc(o.titre),projetsEvt(o).map(function(pid){return tagProjet({projet:pid})}).join('')+'<span class="evbtns">'+droite+'</span>')+'</div>';
+    corpsLigne(esc(o.titre),projetsEvt(o).map(function(pid){return tagProjet({projet:pid})}).join('')+'<span class="evbtns">'+droite+'</span>'+boutonsOrdonnance(o))+'</div>';
 }
 function poserParticipation(id,statut){
   D.participations=D.participations.filter(function(p){return !(p.evenement===id&&p.jour===jourVu)});
@@ -1839,6 +1841,8 @@ document.addEventListener('click',function(e){
     poserParticipation(idp,pb.hasAttribute('data-part-reset')?(ob&&ob.facultatif?'choisi':''):pb.dataset.part);
     return;
   }
+  var ordb=e.target.closest('[data-ord]');
+  if(ordb){var po=ordb.dataset.ord.split('|');ajouterOrdonnance(po[0],po.slice(1).join('|'));if(fiche.dataset.mode==='evt'){var oe=D.evenements.filter(function(x){return x.id===fiche.dataset.ev&&x.jour===fiche.dataset.jour})[0];if(oe)ouvrirEvt(oe);}return;}
   var evn=(e.target.closest('.t.evt .nm')||e.target.closest('.t.evt .tag'))&&evtDuJour(e.target.closest('.t.evt').dataset.ev);
   if(evn){ouvrirEvt(evn);return;}
   if(e.target.closest('.t.evt'))return;
@@ -2049,7 +2053,40 @@ function suivreAvancement(t,ancien,jour){
   }
   ajusterTraces(t);
 }
+function ordonnancesEvt(o){
+  var t=normTitre((o.titreOrigine||'')+' '+o.titre);
+  return D.ordonnances.filter(function(x){return x.cle&&t.indexOf(normTitre(x.cle))>=0});
+}
+function etatOrdonnance(x){
+  var lieu=tacheId(x.lieu);if(!estCourses(lieu))return null;
+  var els=listeDe(lieu).filter(function(y){return y.type==='element'&&!y.range&&normTitre(y.texte)===normTitre(x.article)});
+  return {lieu:lieu,aAcheter:els.filter(function(y){return !y.fait})[0]};
+}
+function boutonsOrdonnance(o){
+  return ordonnancesEvt(o).map(function(x){
+    var e=etatOrdonnance(x);if(!e)return '';
+    return e.aAcheter?'<span class="ord on">✓ '+esc(x.article)+' dans les courses</span>':
+      '<button type="button" class="ord" data-ord="'+esc(x.cle)+'|'+esc(x.article)+'">＋ '+esc(x.article)+' → courses</button>';
+  }).join('');
+}
+function ajouterOrdonnance(cle,article){
+  var x=D.ordonnances.filter(function(y){return y.cle===cle&&y.article===article})[0],e=x&&etatOrdonnance(x);if(!e||e.aAcheter)return;
+  ajouterLi(e.lieu,'element','',x.article,{projet:x.projet});
+  document.getElementById('hint').textContent='« '+x.article+' » ajouté aux courses ('+nomLieu(e.lieu)+').';
+  rendre();
+}
+function suivreOrdonnance(t,x,jour){
+  if(!x.fait||!estCourses(t))return;
+  var o=D.ordonnances.filter(function(y){return tacheId(y.lieu)===t&&normTitre(y.article)===normTitre(x.texte)&&y.tache})[0];if(!o)return;
+  var apparait=jourPlus(jour,o.apparait),des=jourPlus(jour,o.des);
+  var titre=o.tache+' (à partir du '+dateCourte(des)+')';
+  var note=sansEmoji(x.texte)+' récupérée le '+dateCourte(jour)+' : rendez-vous possible à partir du '+dateLong(des)+' ('+o.des+' jours après).';
+  var deja=D.taches.filter(function(y){return y.statut!=='fait'&&y.tache.indexOf(o.tache)===0})[0];
+  if(deja){deja.tache=titre;deja.debut=apparait;deja.note=note;envoyer(deja.ligne,{tache:titre,debut:apparait,note:note});}
+  else creerTacheLocale(titre,{projet:o.projet,duree_min:o.duree||'',debut:apparait,note:note});
+}
 function suivreElement(t,x){
+  suivreOrdonnance(t,x,jourElement(x));
   if(x.fait){
     var j=jourElement(x),p=progresDe(t.id,j);
     if(!p){p={tache:t.id,jour:j,debut:t.avancement||0,fin:t.avancement||0,elements:[]};D.progres.push(p);}
@@ -2678,12 +2715,12 @@ function sectionAchats(pid){
 function focusAchat(sel){setTimeout(function(){var i=pmodal.querySelector(sel);if(i)i.focus();},30);}
 function creerLieu(nom,pid,texte){
   nom=String(nom||'').trim();if(!nom)return;
-  document.getElementById('hint').textContent='Nouveau lieu : '+nom+'.';
-  google.script.run.withFailureHandler(echecServeur).withSuccessHandler(function(id){
-    var fin=function(){charger()};
-    if(texte)google.script.run.withFailureHandler(echecServeur).withSuccessHandler(fin).ajouterListe(id,'element','',texte,'','',pid||'');
-    else fin();
-  }).ajouterTache('🛍️ Acheter : '+nom,{type:'courses',contexte:nom,duree_min:30});
+  var meme=lieux().filter(function(t){return normTitre(nomLieu(t))===normTitre(nom)})[0];
+  var t=meme||creerTacheLocale('🛍️ Acheter : '+nom,{type:'courses',contexte:nom,duree_min:30});
+  if(pid)achLieu[pid]=t.id;
+  if(texte)ajouterLi(t,'element','',texte,{projet:pid||''});
+  document.getElementById('hint').textContent=(meme?'Lieu : ':'Nouveau lieu : ')+nom+'.';
+  rendre();if(pmodal.classList.contains('on'))renderPModal();
 }
 document.addEventListener('click',function(e){
   var ou=e.target.closest('[data-ach-ouvrir]');
@@ -2992,6 +3029,7 @@ function ouvrirEvt(o){
   fiche.innerHTML='<div class="fx">'+
     '<div class="fx-lab" style="margin-top:2px">'+dateLong(o.jour)+(o.heure?' · '+heureAff(o.heure):'')+(o.source?' · '+esc(o.source):'')+'</div>'+
     '<div class="fx-titre-fixe">'+esc(o.titre)+'</div>'+(o.lieu?'<div class="fx-lab" style="margin-top:2px">📍 '+esc(o.lieu)+'</div>':'')+
+    (boutonsOrdonnance(o)?'<div class="fx-chips" style="margin-top:12px">'+boutonsOrdonnance(o)+'</div>':'')+
     '<div class="fx-lab">Projets'+(nb>1?' · toutes les séances':'')+'</div>'+chips+blocRappelsLies(o.id,sel[0]||'')+
     '<div class="btns">'+(o.perso?'<button type="button" class="doux" data-evbase>↺ Projets de base</button>':'')+
     '<button type="button" class="pri" data-act="fermer">OK</button></div></div>';
@@ -5141,7 +5179,7 @@ document.addEventListener('contextmenu',function(e){if(glisse)e.preventDefault()
 
 function appliquer(d){
   var ancien=AUJ;
-  D=d;D.archives=D.archives||[];D.idees=D.idees||[];D.films=(D.films||[]).map(function(m){m.type='film';return m});D.series=(D.series||[]).map(function(m){m.type='serie';return m});D.visionnages=D.visionnages||[];D.episodes=D.episodes||[];D.listes=D.listes||[];D.poses=D.poses||[];D.progres=D.progres||[];D.souhaits=D.souhaits||[];D.journal=D.journal||[];reprendreBrouillon();D.rappels=(D.rappels||[]).map(function(r){r.debut=r.debut||'';r.fin=r.fin||'';return r});AUJ=d.aujourdhui;
+  D=d;D.archives=D.archives||[];D.idees=D.idees||[];D.films=(D.films||[]).map(function(m){m.type='film';return m});D.series=(D.series||[]).map(function(m){m.type='serie';return m});D.visionnages=D.visionnages||[];D.episodes=D.episodes||[];D.listes=D.listes||[];D.poses=D.poses||[];D.progres=D.progres||[];D.souhaits=D.souhaits||[];D.journal=D.journal||[];D.ordonnances=D.ordonnances||[];reprendreBrouillon();D.rappels=(D.rappels||[]).map(function(r){r.debut=r.debut||'';r.fin=r.fin||'';return r});AUJ=d.aujourdhui;
   if(jourVu===null||jourVu===ancien)jourVu=AUJ;
   if(d.calendriersEnErreur&&d.calendriersEnErreur.length)
     document.getElementById('hint').textContent='Calendrier qui ne répond pas pour l\'instant : '+d.calendriersEnErreur.join(', ')+'.';
