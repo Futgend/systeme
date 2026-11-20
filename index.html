@@ -415,6 +415,10 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
 .pm-doms{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .pm-etats{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .t.evt .nm,.t.evt .tag{cursor:pointer}
+.idees-res{margin:2px 0 8px}
+.idees-res>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--t2);padding:3px 2px;list-style-position:inside}
+.t.idee-t{border-style:dashed;opacity:.92;cursor:grab}
+.idee-ic{width:22px;display:inline-flex;justify-content:center;flex-shrink:0;font-size:14px}
 .ord{font:inherit;font-size:12px;font-weight:600;border:1.5px dashed #2E2622;border-radius:999px;background:#FFF1D6;color:#2E2622;padding:3px 10px;cursor:pointer;margin-top:4px}
 .ord.on{border-style:solid;background:#E4EFEA;font-weight:500;cursor:default}
 .rlie{display:flex;flex-direction:column;gap:6px}
@@ -1668,8 +1672,10 @@ function rendre(){
   var res=urgents.concat(reste.map(function(x){return x.t})).concat(replays);
   var htmlTaches=(nAnp?'<button type="button" class="rvoir" data-jv="journee">⚑ '+nAnp+(nAnp>1?' urgentes':' urgente')+' dans « À ne pas rater »</button>':'')+
     urgents.map(function(t){return ligneT(t,{liste:true})+listeReserve(t)}).join(''),dernier=null;
+  var grpIdees=null;
   reste.forEach(function(x){
     var k=estCourses(x.t)?'$c':(x.t.projet&&rangP[x.t.projet]!=null?x.t.projet:'-');
+    if(k!==grpIdees){if(grpIdees!==null)htmlTaches+=ideesReserve(grpIdees);grpIdees=k;}
     if(!filtreReserve&&k!==dernier){
       var p=projet(k);
       htmlTaches+='<div class="rgrp">'+(k==='$c'?'🛒 Courses':(p?(p.icone?p.icone+' ':'')+esc(p.nom):'Sans projet'))+'</div>';
@@ -1677,6 +1683,7 @@ function rendre(){
     }
     htmlTaches+=ligneT(x.t,x.et?{sansProjet:true,etat:x.et,passer:true,liste:true}:{sansProjet:true,liste:true})+listeReserve(x.t);   // le groupe dit déjà le projet
   });
+  if(grpIdees!==null)htmlTaches+=ideesReserve(grpIdees);
   var htmlReplis=(replays.length?'<details class="possibles replays" id="replays"'+(replaysOuvert?' open':'')+'><summary>📺 Replays à regarder ('+replays.length+')'+limiteReplays(replays)+'</summary>'+
     replays.map(ligneT).join('')+'</details>':'');
   var ps=D.evenements.filter(function(o){return o.jour===jourVu&&o.facultatif&&!participation(o.id,o.jour)})
@@ -1841,6 +1848,8 @@ document.addEventListener('click',function(e){
     poserParticipation(idp,pb.hasAttribute('data-part-reset')?(ob&&ob.facultatif?'choisi':''):pb.dataset.part);
     return;
   }
+  var idr=e.target.closest('#jour .t[data-idee-r]');
+  if(idr){if(!apresGlisse)ouvrirIdeeRes(idr.dataset.ideeR);return;}
   var ordb=e.target.closest('[data-ord]');
   if(ordb){var po=ordb.dataset.ord.split('|');ajouterOrdonnance(po[0],po.slice(1).join('|'));if(fiche.dataset.mode==='evt'){var oe=D.evenements.filter(function(x){return x.id===fiche.dataset.ev&&x.jour===fiche.dataset.jour})[0];if(oe)ouvrirEvt(oe);}return;}
   var evn=(e.target.closest('.t.evt .nm')||e.target.closest('.t.evt .tag'))&&evtDuJour(e.target.closest('.t.evt').dataset.ev);
@@ -2085,6 +2094,42 @@ function suivreOrdonnance(t,x,jour){
   if(deja){deja.tache=titre;deja.debut=apparait;deja.note=note;envoyer(deja.ligne,{tache:titre,debut:apparait,note:note});}
   else creerTacheLocale(titre,{projet:o.projet,duree_min:o.duree||'',debut:apparait,note:note});
 }
+var ideesResOuvert={};
+function ideesReserve(k){
+  if(k==='$c')return '';
+  var l=k==='-'?D.idees.filter(function(i){return !i.projet||!projet(i.projet)}):ideesProjet(k);
+  l=l.filter(function(i){return i.id});if(!l.length)return '';
+  return '<details class="idees-res" data-ider="'+esc(k)+'"'+(ideesResOuvert[k]?' open':'')+'><summary>💡 Idées ('+l.length+')</summary>'+
+    l.map(function(i){
+      return '<div class="t idee-t'+couleurLigne(i.projet)+'" data-idee-r="'+esc(i.id)+'"'+styleLigne(i.projet)+'><span class="idee-ic">💡</span>'+
+        corpsLigne(esc(i.texte),i.note?'<span class="dur">📝</span>':'')+'</div>';
+    }).join('')+'</details>';
+}
+document.addEventListener('toggle',function(e){var d=e.target;if(d.classList&&d.classList.contains('idees-res'))ideesResOuvert[d.dataset.ider]=d.open;},true);
+function ideeVersTache(id,moment){
+  var i=idee(id);if(!i)return null;
+  D.idees=D.idees.filter(function(x){return x!==i});
+  var t=tacheLocale(sansEmoji(i.texte)===i.texte?'📝 '+i.texte:i.texte,{projet:i.projet||'',note:i.note||'',moment:moment||'',jour:moment?jourVu:''});
+  google.script.run.withSuccessHandler(idConfirme(t)).withFailureHandler(echecServeur).ideeEnTache(i.id,t.id,moment?{moment:moment,jour:jourVu}:{});
+  document.getElementById('hint').textContent='Idée devenue tâche : « '+t.tache+' »'+(moment?' (posée).':'.');
+  return t;
+}
+function ouvrirIdeeRes(id){
+  var i=idee(id);if(!i)return;
+  var p=projet(i.projet);
+  fiche.dataset.l='';fiche.dataset.mode='idee-res';fiche.dataset.idee=id;
+  fiche.innerHTML='<div class="fx"><div class="fx-lab" style="margin-top:2px">💡 Idée'+(p?' · '+(p.icone?p.icone+' ':'')+esc(p.nom):'')+'</div>'+
+    '<div class="fx-titre-fixe">'+esc(i.texte)+'</div>'+(i.note?'<div class="fx-cap">'+esc(i.note)+'</div>':'')+
+    '<div class="fx-lab">Quand ? '+nomJourVu()+'</div>'+pastilles('data-ider-m','moment',MOM.map(function(m){return [m.k,m.i+' '+m.n]}),'')+
+    '<div class="btns"><button type="button" class="doux" data-ider-tache>→ Tâche, sans la poser</button><button type="button" class="pri" data-act="fermer">OK</button></div></div>';
+  fiche.classList.add('on');scrim.classList.add('on');
+}
+fiche.addEventListener('click',function(e){
+  if(fiche.dataset.mode!=='idee-res')return;
+  var m=e.target.closest('[data-ider-m]');
+  if(m){ideeVersTache(fiche.dataset.idee,m.dataset.v);fermerFiche();return;}
+  if(e.target.closest('[data-ider-tache]')){ideeVersTache(fiche.dataset.idee,'');fermerFiche();}
+});
 function suivreElement(t,x){
   suivreOrdonnance(t,x,jourElement(x));
   if(x.fait){
@@ -5124,6 +5169,10 @@ function finirGlisse(deposer){
     if(z.id!=='reserve')reordonner(z,g);
     rendre();return;
   }
+  if(g.idr){
+    if(z&&z.id!=='reserve'){var ti=ideeVersTache(g.idr,z.dataset.m);if(ti){g.l=String(ti.ligne);reordonner(z,g);}}
+    rendre();return;
+  }
   if(g.lie&&z){
     var x=elementId(g.lie),tx=x&&tacheId(x.tache);
     if(x&&tx)placerElement(x,tx,z.id==='reserve'?'':z.dataset.m);
@@ -5161,7 +5210,7 @@ document.addEventListener('pointerdown',function(e){
   if(!row||row.classList.contains('bloq')||e.target.closest('.ring,button'))return;
   if(row.classList.contains('evt')&&!row.classList.contains('facu'))return;
   if(row.classList.contains('trace'))return;   // la trace d'un jour passé ne se déplace pas
-  glisse={row:row,l:row.dataset.l,e:row.dataset.e,ev:row.dataset.ev,lie:row.dataset.lie,pose:row.dataset.pose,id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,
+  glisse={row:row,l:row.dataset.l,e:row.dataset.e,ev:row.dataset.ev,lie:row.dataset.lie,pose:row.dataset.pose,idr:row.dataset.ideeR,id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,
     touch:e.pointerType!=='mouse',actif:false};
   if(glisse.touch)glisse.timer=setTimeout(function(){if(glisse&&!glisse.actif)demarrerGlisse(glisse.x,glisse.y)},280);
 });
