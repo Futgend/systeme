@@ -1672,10 +1672,18 @@ function rendre(){
   var res=urgents.concat(reste.map(function(x){return x.t})).concat(replays);
   var htmlTaches=(nAnp?'<button type="button" class="rvoir" data-jv="journee">⚑ '+nAnp+(nAnp>1?' urgentes':' urgente')+' dans « À ne pas rater »</button>':'')+
     urgents.map(function(t){return ligneT(t,{liste:true})+listeReserve(t)}).join(''),dernier=null;
-  var grpIdees=null;
+  var grpIdees=null,vusGrp={},nIdeesSeules=0;
+  var ideesSeules=function(limite){
+    if(filtreReserve)return;
+    D.projets.forEach(function(p,i){
+      if(i>=limite||vusGrp[p.id]||p.forme==='domaine'||enPause(p.id)||!ideesProjet(p.id).some(function(x){return x.id}))return;
+      vusGrp[p.id]=1;nIdeesSeules++;
+      htmlTaches+='<div class="rgrp">'+(p.icone?p.icone+' ':'')+esc(p.nom)+'</div>'+ideesReserve(p.id);
+    });
+  };
   reste.forEach(function(x){
     var k=estCourses(x.t)?'$c':(x.t.projet&&rangP[x.t.projet]!=null?x.t.projet:'-');
-    if(k!==grpIdees){if(grpIdees!==null)htmlTaches+=ideesReserve(grpIdees);grpIdees=k;}
+    if(k!==grpIdees){if(grpIdees!==null)htmlTaches+=ideesReserve(grpIdees);grpIdees=k;ideesSeules(grp(x.t));vusGrp[k]=1;}
     if(!filtreReserve&&k!==dernier){
       var p=projet(k);
       htmlTaches+='<div class="rgrp">'+(k==='$c'?'🛒 Courses':(p?(p.icone?p.icone+' ':'')+esc(p.nom):'Sans projet'))+'</div>';
@@ -1684,6 +1692,8 @@ function rendre(){
     htmlTaches+=ligneT(x.t,x.et?{sansProjet:true,etat:x.et,passer:true,liste:true}:{sansProjet:true,liste:true})+listeReserve(x.t);   // le groupe dit déjà le projet
   });
   if(grpIdees!==null)htmlTaches+=ideesReserve(grpIdees);
+  ideesSeules(Infinity);
+  if(!vusGrp['-']&&!filtreReserve&&ideesReserve('-')){nIdeesSeules++;htmlTaches+='<div class="rgrp">Sans projet</div>'+ideesReserve('-');}
   var htmlReplis=(replays.length?'<details class="possibles replays" id="replays"'+(replaysOuvert?' open':'')+'><summary>📺 Replays à regarder ('+replays.length+')'+limiteReplays(replays)+'</summary>'+
     replays.map(ligneT).join('')+'</details>':'');
   var ps=D.evenements.filter(function(o){return o.jour===jourVu&&o.facultatif&&!participation(o.id,o.jour)})
@@ -1703,7 +1713,7 @@ function rendre(){
   document.querySelector('.jcols').classList.toggle('voir-poser',vueJour==='poser');
   [].forEach.call(document.querySelectorAll('#jvues [data-jv]'),function(b){b.classList.toggle('on',b.dataset.jv===vueJour)});
   document.getElementById('rliste').innerHTML=
-    (urgents.length||reste.length||nAnp?htmlTaches:'<div class="empty">'+(filtreReserve?'rien à poser pour ce projet':'toutes les tâches sont posées')+'</div>')+
+    (urgents.length||reste.length||nAnp||nIdeesSeules?htmlTaches:'<div class="empty">'+(filtreReserve?'rien à poser pour ce projet':'toutes les tâches sont posées')+'</div>')+
     (libres.length?'<div class="rsec">Pour avancer</div>'+libres.map(function(e){return ligneElan(e,null)}).join(''):'')+
     htmlReplis;
 
