@@ -3299,7 +3299,10 @@ function vueAuto(t){
   if(!autoDuJour(t))return t;
   return Object.assign({},t,{moment:t.pose_auto,jour:jourVu,avancement:0,statut:'a faire',fait_le:'',auto:true});
 }
-function retirerAuto(t){t.pause=jourPlus(jourVu,1);envoyer(t.ligne,{pause_jusqu_au:t.pause});}
+function retirerAuto(t){
+  if(jourVu>AUJ){document.getElementById('hint').textContent='« '+t.tache+' » reste posée d’office ce jour-là.';return;}
+  t.pause=jourPlus(jourVu,1);envoyer(t.ligne,{pause_jusqu_au:t.pause});
+}
 var ORDRE_MOM={journee:0,matin:1,'apres-midi':2,soir:3},HEURE_MOM={matin:'09:00','apres-midi':'14:00',soir:'20:00'};
 function momentsAuto(t){
   return String(t.pose_auto||'').split(',').map(function(x){return x.trim()}).filter(function(x,i,a){return ORDRE_MOM[x]!=null&&a.indexOf(x)===i})
