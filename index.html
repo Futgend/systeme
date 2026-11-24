@@ -1579,6 +1579,55 @@ function maj(){
   if(finis!==maj.finis&&!glisse){maj.finis=finis;if(jourVu)rendre();}
 }
 
+function tachesDuJour(){
+  return D.taches.filter(function(t){return t.statut!=='sommeil'})
+    .reduce(function(a,t){return a.concat(estMulti(t)?foisDuJour(t):[vueAuto(t)])},[])
+    .filter(function(t){return t.moment&&t.jour===jourVu});
+}
+function itemsMoment(mk,jour){
+  jour=jour||tachesDuJour();
+  var li=jour.filter(function(t){return t.moment===mk});
+  var els=D.avancees.filter(function(a){return a.jour===jourVu&&elan(a.elan)&&(a.moment===mk||(mk==='journee'&&!a.moment))});
+  var pos=D.poses.filter(function(p){
+    var t=tacheId(p.tache);if(!t||p.jour!==jourVu||p.moment!==mk||estMulti(t))return false;
+    return p.elements.length?elementsPose(p).length>0:!(t.moment&&t.jour===jourVu);
+  });
+  return li.map(function(t,i){
+      var f=estMulti(t)&&t.statut==='fait'?foisFaite(t,jourVu,t.occ):null;
+      return {t:t,fait:t.statut==='fait'||t.avancement>=1,ordre:(f?f.ordre:t.ordre)||0,i:i};
+    })
+    .concat(els.map(function(a,i){return {a:a,fait:!!a.fait,ordre:a.ordre||0,i:1000+i}}))
+    .concat(pos.map(function(p,i){return {p:p,fait:p.elements.length?elementsPose(p).every(function(x){return x.fait}):p.avancement>=1,ordre:p.ordre||0,i:2000+i}}));
+}
+function trierItems(items){return items.sort(function(x,y){return (y.fait?1:0)-(x.fait?1:0)||(x.ordre||1e6)-(y.ordre||1e6)||x.i-y.i})}
+function cleItem(x){return x.t?'t:'+x.t.ligne:(x.a?'e:'+x.a.elan:'p:'+x.p.id)}
+function cleLigne(r){var p=r.dataset.pose||r.dataset.trace;return r.dataset.e?'e:'+r.dataset.e:(p?'p:'+p:'t:'+r.dataset.l)}
+function numeroter(liste,mk){
+  var envoi=[];
+  liste.forEach(function(x,i){
+    var n=i+1;x.ordre=n;
+    if(x.a){if(x.a.ordre!==n){x.a.ordre=n;envoi.push({elan:x.a.elan,ordre:n});}return;}
+    if(x.p){if(x.p.ordre!==n)majPoseLocale(x.p,{ordre:n});return;}
+    var t=trouve(x.t.ligne);if(!t)return;
+    var f=estMulti(t)&&foisFaite(t,jourVu,x.t.occ||mk);
+    if(f){if(f.ordre!==n)majPoseLocale(f,{ordre:n});return;}
+    if(t.ordre!==n){t.ordre=n;envoi.push({tache:t.id,ligne:Number(t.ligne),ordre:n});}
+  });
+  if(envoi.length)google.script.run.withFailureHandler(echecServeur).ordonnerJour(jourVu,envoi);
+}
+var faitsVus={};
+function rangerValides(items,mk,vus){
+  var avant=faitsVus[jourVu],nouveaux=[];
+  items.forEach(function(x){
+    var k=cleItem(x)+(x.t&&x.t.occ?'@'+x.t.occ:'');
+    if(x.fait&&avant&&avant[k]!==true)nouveaux.push(x);
+    vus[k]=x.fait;
+  });
+  if(!nouveaux.length)return;
+  var tri=trierItems(items.slice());
+  numeroter(tri.filter(function(x){return x.fait&&nouveaux.indexOf(x)<0}).concat(nouveaux,tri.filter(function(x){return !x.fait})),mk);
+}
+
 function rendre(){
   garderCopie();
   majRappelsLies();
@@ -1589,21 +1638,14 @@ function rendre(){
   majBudget(act);
   renderRappels();
 
-  var avJour=D.avancees.filter(function(a){return a.jour===jourVu&&elan(a.elan)});
+  var vus={};
   document.getElementById('moments').innerHTML=MOM.map(function(m){
-    var li=jour.filter(function(t){return t.moment===m.k});
-    var els=avJour.filter(function(a){return a.moment===m.k||(m.k==='journee'&&!a.moment)});
     var evm=D.evenements.filter(function(o){return o.jour===jourVu&&o.moment===m.k&&estVisible(o)})
       .sort(function(a,b){return (a.heure||'').localeCompare(b.heure||'')});
-    var pos=D.poses.filter(function(p){
-      var t=tacheId(p.tache);if(!t||p.jour!==jourVu||p.moment!==m.k||estMulti(t))return false;
-      return p.elements.length?elementsPose(p).length>0:!(t.moment&&t.jour===jourVu);
-    });
-    var n=li.length+els.length+evm.length+pos.length;
-    var items=li.map(function(t,i){return {t:t,fait:t.statut==='fait'||t.avancement>=1,ordre:t.ordre||0,i:i}})
-      .concat(els.map(function(a,i){return {a:a,fait:!!a.fait,ordre:a.ordre||0,i:1000+i}}))
-      .concat(pos.map(function(p,i){return {p:p,fait:p.elements.length?elementsPose(p).every(function(x){return x.fait}):p.avancement>=1,ordre:p.ordre||0,i:2000+i}}))
-      .sort(function(x,y){return (y.fait?1:0)-(x.fait?1:0)||(x.ordre||1e6)-(y.ordre||1e6)||x.i-y.i});
+    var items=itemsMoment(m.k,jour);
+    rangerValides(items,m.k,vus);
+    trierItems(items);
+    var n=items.length+evm.length;
     var fini=function(x){return x.fait};
     var evFin=evm.filter(function(o){var p=participation(o.id,o.jour);return evtFini(o)&&p&&p.statut!=='choisi'});
     var evAct=evm.filter(function(o){return evFin.indexOf(o)<0});
@@ -1619,6 +1661,7 @@ function rendre(){
       '<div class="mfree">'+(n?n+' posée'+(n>1?'s':''):'')+'</div></div>'+
       (n?repli+evAct.map(ligneEvt).join('')+itAct.map(ligneItem).join(''):'<div class="empty">rien de posé</div>')+'</div>';
   }).join('');
+  faitsVus[jourVu]=vus;
 
   var tous=D.taches.map(function(t,i){return {t:t,i:i}})
     .filter(function(x){return faisable(x.t)&&!estRecurrente(x.t)&&!(x.t.moment&&x.t.jour===jourVu)&&!enPause(x.t.projet)});
@@ -5139,17 +5182,22 @@ function defilerBords(){
   if(v){window.scrollBy(0,v);bougerGlisse(glisse.x,glisse.y);}
   requestAnimationFrame(defilerBords);
 }
-function reordonner(z,g){
-  var rows=[].filter.call(z.querySelectorAll('.t:not(.evt)'),function(r){return r!==g.row&&!r.closest('details.termines')});
-  var cle=g.e?'e:'+g.e:'t:'+g.l,idx=rows.filter(function(r){var b=r.getBoundingClientRect();return b.top+b.height/2<g.y}).length;
-  var cles=rows.map(function(r){return r.dataset.e?'e:'+r.dataset.e:'t:'+r.dataset.l});
-  cles.splice(idx,0,cle);
-  var envoi=[];
-  cles.forEach(function(k,i){
-    if(k[0]==='e'){var a=avanceeDe(k.slice(2),jourVu);if(a){a.ordre=i+1;envoi.push({elan:a.elan,ordre:i+1});}}
-    else{var t=trouve(k.slice(2));if(t){t.ordre=i+1;envoi.push({tache:t.id,ligne:Number(t.ligne),ordre:i+1});}}
+function reordonner(z,g,cle){
+  var mk=z.dataset.m;cle=cle||cleLigne(g.row);
+  var items=trierItems(itemsMoment(mk)),moi=items.filter(function(x){return cleItem(x)===cle})[0];
+  if(!moi)return;
+  var y={};
+  [].forEach.call(z.querySelectorAll('.t:not(.evt)'),function(r){
+    if(r===g.row)return;var b=r.getBoundingClientRect();if(b.height)y[cleLigne(r)]=b.top+b.height/2;
   });
-  google.script.run.withFailureHandler(echecServeur).ordonnerJour(jourVu,envoi);
+  var avant=function(x){var c=y[cleItem(x)];return c!=null&&c<g.y};
+  var autres=items.filter(function(x){return x!==moi});
+  var fin=autres.filter(function(x){return x.fait}),act=autres.filter(function(x){return !x.fait});
+  var groupe=moi.fait?fin:act;
+  var visibles=groupe.some(function(x){return y[cleItem(x)]!=null});
+  groupe.splice(visibles?groupe.filter(avant).length:groupe.length,0,moi);
+  numeroter(fin.concat(act),mk);
+  if(moi.fait)terminesOuverts[jourVu+mk]=true;
 }
 function finirGlisse(deposer){
   var g=glisse;glisse=null;
@@ -5183,7 +5231,7 @@ function finirGlisse(deposer){
     rendre();return;
   }
   if(g.idr){
-    if(z&&z.id!=='reserve'){var ti=ideeVersTache(g.idr,z.dataset.m);if(ti){g.l=String(ti.ligne);reordonner(z,g);}}
+    if(z&&z.id!=='reserve'){var ti=ideeVersTache(g.idr,z.dataset.m);if(ti)reordonner(z,g,'t:'+ti.ligne);}
     rendre();return;
   }
   if(g.lie&&z){
@@ -5194,10 +5242,23 @@ function finirGlisse(deposer){
   if(g.pose&&z){
     var pz=D.poses.filter(function(q){return q.id===g.pose})[0];
     if(pz)deplacerPose(pz,z.id==='reserve'?'':z.dataset.m);
+    if(pz&&z.id!=='reserve')reordonner(z,g);
+    rendre();return;
+  }
+  if(g.trace){
+    var tz=D.poses.filter(function(q){return q.id===g.trace})[0];
+    if(tz&&z&&z.id!=='reserve'){
+      if(tz.moment!==z.dataset.m)majPoseLocale(tz,{moment:z.dataset.m});
+      reordonner(z,g);
+    }
     rendre();return;
   }
   var t=trouve(g.l);if(!t||!z)return;
-  if(estMulti(t)){if(z.id==='reserve'&&foisDuJour(t).length)retirerAuto(t);rendre();return;}
+  if(estMulti(t)){
+    if(z.id==='reserve'){if(foisDuJour(t).length)retirerAuto(t);}
+    else if(z.dataset.m===g.row.dataset.occ)reordonner(z,g);
+    rendre();return;
+  }
   if(finieAvant(t))renouvelerLocal(t);
   if(z.id==='reserve'){
     if(estRecurrente(t)&&t.statut==='fait'&&t.jour===jourVu){var a0=t.avancement;t.avancement=0;t.statut='a faire';t.fait_le='';suivreAvancement(t,a0);envoyer(t.ligne,{avancement:0,statut:'a faire'});}
@@ -5222,8 +5283,7 @@ document.addEventListener('pointerdown',function(e){
   var row=e.target.closest('#jour .t');
   if(!row||row.classList.contains('bloq')||e.target.closest('.ring,button'))return;
   if(row.classList.contains('evt')&&!row.classList.contains('facu'))return;
-  if(row.classList.contains('trace'))return;   // la trace d'un jour passé ne se déplace pas
-  glisse={row:row,l:row.dataset.l,e:row.dataset.e,ev:row.dataset.ev,lie:row.dataset.lie,pose:row.dataset.pose,idr:row.dataset.ideeR,id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,
+  glisse={row:row,l:row.dataset.l,e:row.dataset.e,ev:row.dataset.ev,lie:row.dataset.lie,pose:row.dataset.pose,trace:row.dataset.trace,idr:row.dataset.ideeR,id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,
     touch:e.pointerType!=='mouse',actif:false};
   if(glisse.touch)glisse.timer=setTimeout(function(){if(glisse&&!glisse.actif)demarrerGlisse(glisse.x,glisse.y)},280);
 });
