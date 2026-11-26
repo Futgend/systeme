@@ -713,7 +713,7 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
 
 @media(max-width:759px){
   .jmain{display:contents}
-  .budget{order:1} #rappels{order:2} #anp{order:3} #moments{order:4} #journal-jour{order:5} #hint{order:6} .reserve{order:7}
+  .budget{order:1} #rappels{order:2} #anp{order:3} #moments{order:4} #journal-jour{order:5} #ressentis{order:5} #hint{order:6} .reserve{order:7}
 }
 @media(min-width:760px){
   .wrap{max-width:1240px}
@@ -910,10 +910,52 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
 .journal-bloc textarea:focus,.jr-fiche:focus{outline:none;border-color:var(--bord);box-shadow:var(--ombre-s)}
 .journal-bloc textarea::placeholder,.jr-fiche::placeholder{color:var(--t3)}
 .jr-fiche{width:100%;margin:8px 0 4px}
+.rs-blocs{display:block}
+.rs-bloc{background:var(--card);border:1.5px solid var(--bord);border-radius:20px;box-shadow:var(--ombre);overflow:hidden;margin-bottom:22px;padding-bottom:2px}
+.rs-t{background:#F3A155;padding:12px 16px 11px;border-bottom:1.5px solid var(--bord);font-size:16.5px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.rs-pese .rs-t{background:#C9C0D8}
+.rs-g{font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--t2);margin:10px 16px 5px}
+.rs-l{display:flex;justify-content:space-between;align-items:baseline;gap:10px;width:calc(100% - 28px);margin:0 14px 6px;text-align:left;
+  font:inherit;font-size:14.5px;line-height:1.4;color:var(--ink);background:#FFF4DF;border:0;border-left:4px solid #F3A155;border-radius:10px;padding:7px 11px;cursor:pointer}
+.rs-l small{font-size:12px;color:var(--t2);white-space:nowrap;flex-shrink:0}
+.rs-pese .rs-l{background:#F2EEF7;border-left-color:#A392AF}
+.rs-quand{color:#C44B56!important;font-weight:600}
+.rs-nv{display:block;width:calc(100% - 28px);margin:6px 14px 12px;font:inherit;font-size:14.5px;padding:8px 12px;border:1.5px dashed var(--line2);
+  border-radius:12px;background:transparent;color:var(--ink);box-sizing:border-box}
+.rs-nv:focus{outline:none;border-style:solid;border-color:var(--bord);background:#FFFBF3}
+.rs-fin{margin:4px 14px 10px;padding:9px 11px;border:1.5px solid var(--bord);border-radius:12px;background:#FFF1D6;box-shadow:var(--ombre-s)}
+.rs-pese .rs-fin{background:#F2EEF7}
+.rs-fin b{display:block;font-size:14.5px;font-weight:600;margin:1px 0}
+.rs-fin small{display:block;font-size:12.5px;color:var(--t2)}
+.rs-ligne{display:flex;gap:6px;margin-top:6px}
+.rs-ligne input{flex:1;min-width:0;font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--line2);border-radius:10px;background:#FFFBF3;color:var(--ink)}
+.rs-fin button{font:inherit;font-size:13px;border:1.5px solid var(--bord);border-radius:999px;background:var(--card);padding:4px 11px;cursor:pointer;color:var(--ink)}
+.rs-choix{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.rs-sugg{margin:0 14px}
+.rs-sugg button{display:block;width:100%;text-align:left;font:inherit;font-size:13.5px;border:1px dashed var(--line2);border-radius:10px;background:transparent;
+  padding:6px 10px;margin-bottom:5px;cursor:pointer;color:var(--ink)}
+.rs-sugg small{color:var(--t2)}
+.rs-vide{margin:6px 16px 14px;font-size:13.5px;color:var(--t2)}
+.rs-vue{margin-bottom:20px}
+.rs-vue .rs-l{flex-direction:column;gap:2px}
+.rs-vue .rs-l small{white-space:normal}
+.rs-dates{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;font-size:13.5px;color:var(--t2)}
+.rs-dates label{display:flex;align-items:center;gap:6px}
+.fiche .rs-dates input{width:auto}
+.fiche textarea.fx-titre[data-rs-champ]{min-height:0}
+.rs-acts{margin-top:14px}
+.rs-hist{font-size:13px;color:var(--t2);line-height:1.7}
+.rs-hist b{font-weight:600;color:var(--ink)}
+.jc-rs{padding:10px 14px 0}
+.rs-j{display:flex;gap:8px;align-items:baseline;width:100%;text-align:left;font:inherit;font-size:14px;line-height:1.4;color:var(--ink);background:transparent;border:0;padding:3px 2px;cursor:pointer}
+.rs-j i{font-style:normal;width:20px;flex-shrink:0;text-align:center}
+.rs-j small{display:block;font-size:12px;color:var(--t2)}
+.jc-rsporte{margin:4px 0 2px;font-size:13px}
+.jc-rsporte summary{cursor:pointer;color:var(--t2);padding:3px 2px}
 .fiche .jr-fiche{min-height:180px}
 .jr-etat{min-height:16px;margin:0 16px 10px;font-size:12px;color:var(--t2);text-align:right}
 .fiche .jr-etat{margin:0 2px 8px}
-#jfiltres{margin-bottom:14px}
+#jfiltres{margin-bottom:14px;flex-wrap:wrap;row-gap:7px}
 .jcarte{background:var(--card);border:1.5px solid var(--bord);border-radius:20px;box-shadow:var(--ombre);overflow:hidden;margin-bottom:20px}
 .jc-tete{background:#F5D687;border-bottom:1.5px solid var(--bord);padding:11px 16px 10px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
 .jcarte.auj .jc-tete{background:#C44B56;color:var(--creme)}
@@ -987,7 +1029,7 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
   .jvues button{flex:1;border:0;background:transparent;border-radius:999px;padding:8px 0;font:inherit;font-size:14px;font-weight:500;color:var(--t2);cursor:pointer}
   .jvues button.on{background:#A392AF;color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1.5px var(--bord)}
   .jvues button[data-jv=journee].on{background:#C44B56;color:var(--creme)}
-  .jcols.voir-poser .budget,.jcols.voir-poser #anp,.jcols.voir-poser #moments,.jcols.voir-poser #hint,.jcols.voir-poser #journal-jour,.jcols.voir-poser #rappels{display:none}
+  .jcols.voir-poser .budget,.jcols.voir-poser #anp,.jcols.voir-poser #moments,.jcols.voir-poser #hint,.jcols.voir-poser #journal-jour,.jcols.voir-poser #ressentis,.jcols.voir-poser #rappels{display:none}
   .jcols:not(.voir-poser) .reserve{display:none}
   .budget{cursor:pointer}
   .budget .bsous,.budget .key,.budget .bcalc{display:none}
@@ -1052,6 +1094,7 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
     <div id="anp"></div>
     <div id="moments"></div>
     <div id="journal-jour"></div>
+    <div id="ressentis"></div>
     <div class="hint" id="hint"></div>
    </div>
    <div id="rappels"></div>
@@ -1117,7 +1160,7 @@ window.addEventListener('beforeunload',function(e){if(enVol>0){e.preventDefault(
     Object.defineProperty(google.script,'run',{configurable:true,get:function(){return envelopper(null,null)}});
   }catch(_){}
 })();
-var D={taches:[],projets:[],elans:[],avancees:[],evenements:[],participations:[],livres:[],lectures:[],rappels:[],archives:[],idees:[],films:[],series:[],visionnages:[],episodes:[],listes:[],poses:[],progres:[],souhaits:[],journal:[]},jourVu=null,AUJ=null,vue='jour';
+var D={taches:[],projets:[],elans:[],avancees:[],evenements:[],participations:[],livres:[],lectures:[],rappels:[],archives:[],idees:[],films:[],series:[],visionnages:[],episodes:[],listes:[],poses:[],progres:[],souhaits:[],journal:[],contacts:[],discussions:[],ressentis:[]},jourVu=null,AUJ=null,vue='jour';
 var NATURES=[['ponctuelle','Ponctuelle'],['recurrente-souple','Récurrente souple'],['echeance-stricte','Échéance stricte']];
 var STATUTS=[['a faire','À faire'],['en cours','En cours'],['fait','Fait'],['sommeil','En sommeil']];
 function momentCourant(){
@@ -1781,6 +1824,7 @@ function rendre(){
     '<div class="anp"><div class="anp-t">À ne pas rater</div>'+anp.map(function(x){return ligneT(x.t)}).join('')+'</div>':'';
 
   renderJournalJour();
+  renderRessentis();
   renderProjets();
   renderJournal();
   renderBiblio();
@@ -3936,6 +3980,246 @@ function ouvrirJournal(jour){
   var ta=fiche.querySelector('textarea');ajusterHauteur(ta);ta.focus();
 }
 
+var rsDernier='';
+function rsJour(){return fiche.classList.contains('on')&&fiche.dataset.mode==='ressenti'&&fiche.dataset.rsJour?fiche.dataset.rsJour:(jourVu&&jourVu<AUJ?jourVu:AUJ)}
+function ressenti(id){return D.ressentis.filter(function(r){return r.id===id})[0]}
+function rsGeste(x){return {j:x.slice(0,10),g:x.slice(11).trim()}}
+function rsHistoire(r){return (r.historique||[]).map(rsGeste).sort(function(a,b){return a.j<b.j?-1:a.j>b.j?1:0})}
+function rsEtatAu(r,j){
+  if(r.cree&&r.cree>j)return null;
+  var h=rsHistoire(r);if(!h.length)return r.etat;
+  var e=null;
+  h.forEach(function(x){if(x.j>j)return;
+    e={veilleuse:'veilleuse',souvenir:'souvenir',mieux:'mieux',issue:'mieux'}[x.g]||'actif';});
+  return e;
+}
+function rsPhase(r,j){
+  if(r.debut&&j<r.debut)return 'bientot';
+  var f=r.fin||r.debut;
+  return f&&j>f?'fini':'maintenant';
+}
+function rsQuand(r,j){
+  var ph=rsPhase(r,j);
+  if(ph==='bientot'){
+    var n=Math.round((parseIso(r.debut)-parseIso(j))/864e5);
+    return n===1?'demain':(n<14?'dans '+n+' jours':(n<60?'dans '+Math.round(n/7)+' sem.':'le '+dateCourte(r.debut)));
+  }
+  if(ph==='maintenant'&&r.debut){var f=r.fin||r.debut;return f===j?(r.debut===f?'aujourd’hui':'dernier jour'):'jusqu’au '+dateCourte(f);}
+  return '';
+}
+function rsEnvoyer(r,champs){if(r.id)google.script.run.withFailureHandler(echecServeur).majRessenti(r.id,champs);}
+function rsNoter(r,g,j){r.historique=(r.historique||[]).concat([(j||rsJour())+' '+g]);}
+function creerRessenti(sorte,texte){
+  texte=String(texte||'').trim();if(!texte)return null;
+  var n=D.ressentis.map(function(x){return parseInt(String(x.id).replace(/\D/g,''),10)||0}),j=rsJour();
+  var r={id:'RS'+(Math.max.apply(null,n.concat([0]))+1),sorte:sorte,texte:texte,cree:j,debut:'',fin:'',etat:'actif',note:'',historique:[j+' cree']};
+  D.ressentis.push(r);rsDernier=r.id;
+  google.script.run.withSuccessHandler(function(id){if(typeof id==='string'&&id&&id!==r.id){r.id=id;charger();}})
+    .withFailureHandler(echecServeur).ajouterRessenti(r);
+  return r;
+}
+function rsGesteFaire(r,g,mot){
+  if(g==='souvenir'){r.etat='souvenir';if(mot)r.note=mot;}
+  else if(g==='veilleuse')r.etat='veilleuse';
+  else if(g==='rallume'||g==='revient')r.etat='actif';
+  else if(g==='mieux')r.etat='mieux';
+  else if(g==='issue'){r.etat='mieux';r.note=mot+(r.note&&r.note!==mot?' · '+r.note:'');}
+  else if(g==='encore'){r.etat='actif';r.debut='';r.fin='';}
+  rsNoter(r,g);
+  var ch={etat:r.etat,historique:r.historique};
+  if(g==='souvenir'||g==='issue')ch.note=r.note;
+  if(g==='encore'){ch.debut='';ch.fin='';}
+  rsEnvoyer(r,ch);rendre();redessinerRs();
+}
+var ISSUES=[['bien','😌 Ça s’est bien passé'],['tenu','💪 Pas comme je voulais, mais j’ai tenu'],['encore','↺ C’est encore là']];
+var MOTS_VIDES=' peur avoir etre faire plus pour dans avec mais assez encore toujours jamais quelque cette comme tres trop rien tout tous parce quand ';
+function motsDe(t){return normTitre(t).split(' ').filter(function(m){return m.length>=4&&MOTS_VIDES.indexOf(' '+m+' ')<0})}
+function rsProches(texte){
+  var ms=motsDe(texte);if(!ms.length)return [];
+  return D.ressentis.filter(function(r){return r.sorte==='pese'&&!rsDuJour(r,jourVu)})
+    .map(function(r){var mr=motsDe(r.texte);return {r:r,n:ms.filter(function(m){return mr.some(function(x){return x.indexOf(m)===0||m.indexOf(x)===0})}).length}})
+    .filter(function(x){return x.n}).sort(function(a,b){return b.n-a.n}).slice(0,3).map(function(x){return x.r});
+}
+function rsDuJour(r,j){return rsHistoire(r).filter(function(x){return x.j===j&&(x.g==='cree'||x.g==='revient')}).length>0}
+function rsFois(r,j){return rsHistoire(r).filter(function(x){return (x.g==='cree'||x.g==='revient')&&(!j||x.j<=j)}).length}
+function rsSugg(texte){
+  return rsProches(texte).map(function(r){return '<button type="button" data-rs-sugg="'+esc(r.id)+'">↺ '+esc(r.texte)+
+    ' <small>· '+(r.etat==='mieux'?'passée':'déjà écrite le '+dateCourte(r.cree))+' · elle revient ?</small></button>'}).join('');
+}
+function ligneRs(r,info){
+  return '<button type="button" class="rs-l" data-rs-ouvre="'+esc(r.id)+'"><span>'+esc(r.texte)+'</span>'+
+    (r.id===rsDernier&&!r.debut?'<small class="rs-quand">📅 Quand ?</small>':(info?'<small>'+esc(info)+'</small>':''))+'</button>';
+}
+function renderRessentis(){
+  var el=document.getElementById('ressentis');if(!el||!jourVu)return;
+  var act=document.activeElement,foc=act&&el.contains(act)&&act.dataset?(act.dataset.rsNv||act.dataset.rsMot):'',val=foc?act.value:'';
+  if(foc&&act.dataset.rsNv&&val)return;   // elle écrit : on ne touche à rien
+  var j=jourVu,auj=j===AUJ;
+  var porte=D.ressentis.filter(function(r){return r.sorte==='porte'&&rsEtatAu(r,j)==='actif'});
+  var fin=auj?porte.filter(function(r){return rsPhase(r,j)==='fini'}):[];
+  var bientot=porte.filter(function(r){return rsPhase(r,j)==='bientot'}).sort(function(a,b){return a.debut.localeCompare(b.debut)});
+  var mtn=porte.filter(function(r){return rsPhase(r,j)==='maintenant'}).sort(function(a,b){
+    return (a.debut?0:1)-(b.debut?0:1)||(a.fin||a.debut).localeCompare(b.fin||b.debut)||a.cree.localeCompare(b.cree)});
+  var pese=D.ressentis.filter(function(r){return r.sorte==='pese'});
+  var issues=auj?pese.filter(function(r){return r.etat==='actif'&&r.debut&&rsPhase(r,j)==='fini'}):[];
+  var duJour=pese.filter(function(r){return rsDuJour(r,j)&&issues.indexOf(r)<0});
+  el.className='rs-blocs';
+  el.innerHTML='<div class="rs-bloc rs-porte"><div class="rs-t">☀️ Ce qui me porte</div>'+
+      fin.map(function(r){return '<div class="rs-fin" data-rs="'+esc(r.id)+'"><b>'+esc(r.texte)+'</b><small>✨ C’était comment ?</small>'+
+        '<div class="rs-ligne"><input type="text" data-rs-mot="'+esc(r.id)+'" placeholder="Une phrase, si tu veux…" aria-label="Comment c’était ?"><button type="button" data-rs-souvenir>✨</button></div></div>'}).join('')+
+      (bientot.length?'<div class="rs-g">Bientôt</div>'+bientot.map(function(r){return ligneRs(r,rsQuand(r,j))}).join(''):'')+
+      (mtn.length?'<div class="rs-g">En ce moment</div>'+mtn.map(function(r){return ligneRs(r,rsQuand(r,j))}).join(''):'')+
+      '<input type="text" class="rs-nv" data-rs-nv="porte" placeholder="＋ Ce qui me fait du bien…" aria-label="Ce qui me porte"></div>'+
+    '<div class="rs-bloc rs-pese"><div class="rs-t">🌧 Ce qui me pèse</div>'+
+      issues.map(function(r){return '<div class="rs-fin" data-rs="'+esc(r.id)+'"><small>Tu avais peur :</small><b>'+esc(r.texte)+'</b><small>Comment ça s’est passé ?</small>'+
+        '<div class="rs-choix">'+ISSUES.map(function(x){return '<button type="button" data-rs-issue="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div></div>'}).join('')+
+      duJour.map(function(r){var n=rsFois(r,j);return ligneRs(r,n>1?'revenue · '+n+'ᵉ fois':'')}).join('')+
+      '<div class="rs-sugg" id="rs-sugg"></div>'+
+      '<input type="text" class="rs-nv" data-rs-nv="pese" placeholder="＋ Ce qui me pèse…" aria-label="Ce qui me pèse"></div>';
+  if(foc){var x=el.querySelector('[data-rs-nv="'+foc+'"],[data-rs-mot="'+foc+'"]');if(x){x.value=val;x.focus();}}
+}
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter'||e.isComposing||!e.target.closest)return;
+  var i=e.target.closest('[data-rs-nv]');
+  if(i){e.preventDefault();var s=i.dataset.rsNv;if(creerRessenti(s,i.value)){i.value='';rendre();var n=document.querySelector('#ressentis [data-rs-nv="'+s+'"]');if(n)n.focus();}return;}
+  var m=e.target.closest('[data-rs-mot]');
+  if(m){e.preventDefault();var r=ressenti(m.dataset.rsMot);if(r)rsGesteFaire(r,'souvenir',m.value.trim());}
+});
+document.addEventListener('input',function(e){
+  var i=e.target.closest&&e.target.closest('[data-rs-nv="pese"]');if(!i)return;
+  var b=document.getElementById('rs-sugg');if(b)b.innerHTML=rsSugg(i.value);
+});
+document.addEventListener('click',function(e){
+  var s=e.target.closest('[data-rs-sugg]');
+  if(s){var r=ressenti(s.dataset.rsSugg),i=document.querySelector('#ressentis [data-rs-nv="pese"]');if(i)i.value='';if(r)rsGesteFaire(r,'revient');return;}
+  var bloc=e.target.closest('.rs-fin[data-rs]');
+  if(bloc){
+    var rf=ressenti(bloc.dataset.rs);if(!rf)return;
+    if(e.target.closest('[data-rs-souvenir]')){var mi=bloc.querySelector('[data-rs-mot]');rsGesteFaire(rf,'souvenir',mi?mi.value.trim():'');return;}
+    var is=e.target.closest('[data-rs-issue]');
+    if(is){var x=ISSUES.filter(function(y){return y[0]===is.dataset.rsIssue})[0];rsGesteFaire(rf,is.dataset.rsIssue==='encore'?'encore':'issue',x[1].replace(/^\S+\s/,''));return;}
+  }
+  var o=e.target.closest('[data-rs-ouvre]');
+  if(o){ouvrirRessenti(o.dataset.rsOuvre);return;}
+});
+
+var MOTS_RS={cree:'écrite',veilleuse:'🌙 en veilleuse',rallume:'☀️ rallumée',souvenir:'✨ souvenir',revient:'revenue',mieux:'ça va mieux',issue:'ça s’est passé',encore:'encore là'};
+var confirmeSupprRs=false;
+function ouvrirRessenti(id){
+  var r=ressenti(id);if(!r)return;
+  var meme=fiche.classList.contains('on')&&fiche.dataset.mode==='ressenti'&&fiche.dataset.rs===id;
+  var j=meme?fiche.dataset.rsJour:(vue==='jour'&&jourVu&&jourVu<AUJ?jourVu:AUJ),defil=meme?fiche.scrollTop:0;
+  if(!meme)confirmeSupprRs=false;
+  fiche.dataset.l='';fiche.dataset.mode='ressenti';fiche.dataset.rs=id;fiche.dataset.rsJour=j;livreOuvert='';
+  if(rsDernier===id)rsDernier='';
+  var porte=r.sorte==='porte',demain=jourPlus(j,1),un=r.debut&&(r.fin||r.debut)===r.debut?r.debut:'';
+  var etat=porte?{veilleuse:' · 🌙 en veilleuse',souvenir:' · ✨ souvenir'}[r.etat]||'':(r.etat==='mieux'?' · ça va mieux':'');
+  var acts=porte?(r.etat==='actif'?[['souvenir','✨ C’est passé'],['veilleuse','🌙 En veilleuse']]:
+      (r.etat==='veilleuse'?[['rallume','☀️ La rallumer'],['souvenir','✨ C’est passé']]:[['rallume','☀️ La rallumer']])):
+    (r.etat==='mieux'?[['revient','↺ Elle est revenue']]:[['mieux','😌 Ça va mieux']]);
+  fiche.innerHTML='<div class="fx">'+
+    '<div class="fx-lab" style="margin-top:2px">'+(porte?'☀️ Ce qui me porte':'🌧 Ce qui me pèse')+etat+'</div>'+
+    '<textarea class="fx-titre" data-rs-champ="texte" rows="1" aria-label="La phrase">'+esc(r.texte)+'</textarea>'+
+    '<div class="fx-lab">Quand ?</div><div class="fx-chips">'+
+      [['','Pas de date'],[j,j===AUJ?'Aujourd’hui':dateCourte(j)],[demain,demain===jourPlus(AUJ,1)?'Demain':dateCourte(demain)]].map(function(x){
+        return '<button type="button" class="fx-chip'+((x[0]?un===x[0]:!r.debut)?' on':'')+'" data-rs-quand="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>'+
+    '<div class="rs-dates"><label>'+(porte?'Du':'Le')+' <input type="date" class="fx-date" data-rs-date="debut" value="'+esc(r.debut)+'"></label>'+
+      (porte?'<label>au <input type="date" class="fx-date" data-rs-date="fin" value="'+esc(r.fin||r.debut)+'"></label>':'')+'</div>'+
+    (r.debut&&rsQuand(r,AUJ)?'<div class="fx-cap">'+esc(rsQuand(r,AUJ))+'</div>':'')+
+    '<div class="fx-chips rs-acts">'+acts.map(function(x){return '<button type="button" class="fx-chip" data-rs-act="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>'+
+    '<div class="fx-lab">'+(porte?(r.etat==='souvenir'?'Comment c’était ?':'Note'):(r.etat==='mieux'?'Comment ça s’est passé ?':'Note'))+'</div>'+
+    '<textarea class="fx-note" data-rs-champ="note" rows="2" aria-label="Note">'+esc(r.note)+'</textarea>'+
+    '<div class="fx-lab">Son histoire</div><div class="rs-hist">'+rsHistoire(r).map(function(x){
+      return '<div><b>'+dateCourte(x.j)+'</b> '+(MOTS_RS[x.g]||esc(x.g))+'</div>'}).join('')+'</div>'+
+    '<div class="btns"><button type="button" class="doux'+(confirmeSupprRs?' sur':'')+'" data-rs-act="suppr">'+(confirmeSupprRs?'Supprimer ?':'Supprimer')+'</button>'+
+    '<button type="button" class="pri" data-act="fermer">OK</button></div></div>';
+  fiche.classList.add('on');scrim.classList.add('on');fiche.scrollTop=defil;
+  var ta=fiche.querySelector('.fx-titre');ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';
+}
+function redessinerRs(){if(fiche.classList.contains('on')&&fiche.dataset.mode==='ressenti')ouvrirRessenti(fiche.dataset.rs);}
+function rsDates(r,debut,fin){
+  r.debut=debut||'';r.fin=fin||'';
+  if(r.fin&&!r.debut)r.debut=r.fin;
+  if(r.debut&&(!r.fin||r.fin<r.debut))r.fin=r.debut;
+  rsEnvoyer(r,{debut:r.debut,fin:r.fin});rendre();redessinerRs();
+}
+fiche.addEventListener('click',function(e){
+  if(fiche.dataset.mode!=='ressenti')return;
+  var r=ressenti(fiche.dataset.rs);if(!r)return;
+  var q=e.target.closest('[data-rs-quand]');
+  if(q){rsDates(r,q.dataset.rsQuand,q.dataset.rsQuand);return;}
+  var a=e.target.closest('[data-rs-act]');if(!a)return;
+  if(a.dataset.rsAct==='suppr'){
+    if(!confirmeSupprRs){confirmeSupprRs=true;redessinerRs();return;}
+    D.ressentis=D.ressentis.filter(function(x){return x!==r});fermerFiche();rendre();
+    google.script.run.withFailureHandler(echecServeur).supprimerRessenti(r.id);return;
+  }
+  rsGesteFaire(r,a.dataset.rsAct,a.dataset.rsAct==='souvenir'?r.note:'');
+});
+fiche.addEventListener('change',function(e){
+  if(fiche.dataset.mode!=='ressenti')return;
+  var r=ressenti(fiche.dataset.rs);if(!r)return;
+  var d=e.target.closest('[data-rs-date]');
+  if(d){var v=d.value;if(d.dataset.rsDate==='debut')rsDates(r,v,r.sorte==='porte'?r.fin:v);else rsDates(r,r.debut,v);return;}
+  var c=e.target.closest('[data-rs-champ]');if(!c)return;
+  var k=c.dataset.rsChamp,v2=c.value.trim();
+  if(k==='texte'&&!v2){c.value=r.texte;return;}
+  if(r[k]!==v2){r[k]=v2;var ch={};ch[k]=v2;rsEnvoyer(r,ch);rendre();}
+});
+
+function rsLigneJour(r,x){
+  var ic=r.sorte==='porte'?'☀️':'🌧',info='';
+  if(x.g==='cree')info=r.sorte==='porte'?'＋ nouveau':'';
+  else if(x.g==='revient'){var n=rsFois(r,x.j);info='revenue'+(n>1?' · '+n+'ᵉ fois':'');}
+  else if(x.g==='veilleuse'){ic='🌙';info='en veilleuse';}
+  else if(x.g==='rallume')info='rallumée';
+  else if(x.g==='souvenir'){ic='✨';info=rsPeriode(r,x.j)+(r.note?' · « '+r.note+' »':'');}
+  else if(x.g==='mieux')info='ça va mieux';
+  else if(x.g==='issue')info=r.note||'ça s’est passé';
+  else if(x.g==='encore')info='encore là';
+  return '<button type="button" class="rs-j" data-rs-ouvre="'+esc(r.id)+'"><i>'+ic+'</i><span>'+esc(r.texte)+(info?'<small>'+esc(info)+'</small>':'')+'</span></button>';
+}
+function rsPeriode(r,jfin){
+  var a=r.debut||r.cree,b=r.debut?(r.fin||r.debut):jfin;
+  return a&&b&&a!==b?'du '+dateCourte(a)+' au '+dateCourte(b):(a?dateCourte(a):'');
+}
+function rsGestesDuJour(j){
+  var l=[];
+  D.ressentis.forEach(function(r){rsHistoire(r).forEach(function(x){if(x.j===j)l.push({r:r,x:x})})});
+  return l.sort(function(a,b){return (a.r.sorte==='porte'?0:1)-(b.r.sorte==='porte'?0:1)});
+}
+function rsBlocJour(j){
+  var gs=rsGestesDuJour(j),portait=D.ressentis.filter(function(r){return r.sorte==='porte'&&rsEtatAu(r,j)==='actif'});
+  if(!gs.length&&!portait.length)return '';
+  return '<div class="jc-rs">'+gs.map(function(y){return rsLigneJour(y.r,y.x)}).join('')+
+    (portait.length?'<details class="jc-rsporte"><summary>☀️ Ce qui me portait ce jour-là ('+portait.length+')</summary>'+
+      portait.map(function(r){return '<button type="button" class="rs-j" data-rs-ouvre="'+esc(r.id)+'"><i>·</i><span>'+esc(r.texte)+'</span></button>'}).join('')+'</details>':'')+'</div>';
+}
+function rsResumeJour(j){
+  var gs=rsGestesDuJour(j),p=gs.filter(function(y){return y.r.sorte==='porte'}).length,q=gs.length-p;
+  return (p?'<span>☀️ '+p+'</span>':'')+(q?'<span>🌧 '+q+'</span>':'');
+}
+function rsDernierGeste(r,gs){var h=rsHistoire(r).filter(function(x){return gs.indexOf(x.g)>=0});return h.length?h[h.length-1].j:'';}
+function rsVueJournal(sorte){
+  var l=D.ressentis.filter(function(r){return r.sorte===sorte}),sec=function(t,rs,info){
+    return rs.length?'<div class="rs-g">'+t+' ('+rs.length+')</div>'+rs.map(function(r){return ligneRs(r,info(r))}).join(''):'';};
+  if(sorte==='porte'){
+    var act=l.filter(function(r){return r.etat==='actif'});
+    var html=sec('En ce moment',act.filter(function(r){return rsPhase(r,AUJ)!=='bientot'}),function(r){return rsQuand(r,AUJ)})+
+      sec('Bientôt',act.filter(function(r){return rsPhase(r,AUJ)==='bientot'}).sort(function(a,b){return a.debut.localeCompare(b.debut)}),function(r){return rsQuand(r,AUJ)})+
+      sec('🌙 En veilleuse',l.filter(function(r){return r.etat==='veilleuse'}),function(r){var d=rsDernierGeste(r,['veilleuse']);return d?'depuis le '+dateCourte(d):''})+
+      sec('✨ Souvenirs',l.filter(function(r){return r.etat==='souvenir'}).sort(function(a,b){return rsDernierGeste(b,['souvenir']).localeCompare(rsDernierGeste(a,['souvenir']))}),
+        function(r){return rsPeriode(r,rsDernierGeste(r,['souvenir']))+(r.note?' · « '+r.note+' »':'')});
+    return '<div class="rs-bloc rs-porte rs-vue"><div class="rs-t">☀️ Ce qui me porte</div>'+(html||'<div class="rs-vide">Rien encore : ça s’écrit dans la journée, sous ton journal.</div>')+'</div>';
+  }
+  var fois=function(r){var n=rsFois(r);return n>1?' · revenue '+(n-1)+' fois':''};
+  var html2=sec('Encore là',l.filter(function(r){return r.etat!=='mieux'}).sort(function(a,b){return b.cree.localeCompare(a.cree)}),
+      function(r){return 'depuis le '+dateCourte(r.cree)+fois(r)+(r.debut&&rsPhase(r,AUJ)!=='fini'?' · le '+dateCourte(r.debut):'')})+
+    sec('Passé',l.filter(function(r){return r.etat==='mieux'}).sort(function(a,b){return rsDernierGeste(b,['mieux','issue']).localeCompare(rsDernierGeste(a,['mieux','issue']))}),
+      function(r){var d=rsDernierGeste(r,['mieux','issue']);return (d&&d!==r.cree?'du '+dateCourte(r.cree)+' au '+dateCourte(d):dateCourte(r.cree))+fois(r)+(r.note?' · '+r.note:'')});
+  return '<div class="rs-bloc rs-pese rs-vue"><div class="rs-t">🌧 Ce qui me pèse</div>'+(html2||'<div class="rs-vide">Rien ici.</div>')+'</div>';
+}
+
 function joursJournal(){
   var jours={};
   var jourDe=function(j){return jours[j]=jours[j]||{jour:j,texte:'',items:[]}};
@@ -4035,11 +4319,13 @@ var journalFiltre='tout',journalNb=14;
 function renderJournal(){
   var liste=document.getElementById('journal-liste');if(!liste||!AUJ)return;
   var jours=joursJournal();
-  var tous=Object.keys(jours).map(function(k){return jours[k]}).filter(function(j){return j.texte||j.items.length})
+  D.ressentis.forEach(function(r){rsHistoire(r).forEach(function(x){if(x.j<=AUJ&&!jours[x.j])jours[x.j]={jour:x.j,texte:'',items:[]}})});
+  var tous=Object.keys(jours).map(function(k){return jours[k]}).filter(function(j){return j.texte||j.items.length||rsGestesDuJour(j.jour).length})
     .sort(function(a,b){return b.jour.localeCompare(a.jour)});
   var ecrits=tous.filter(function(j){return j.texte}).length;
-  document.getElementById('jfiltres').innerHTML=[['tout','Tous les jours'],['ecrit','📓 Ce que j’ai écrit'+(ecrits?' · '+ecrits:'')]].map(function(x){
+  document.getElementById('jfiltres').innerHTML=[['tout','Tous les jours'],['ecrit','📓 Ce que j’ai écrit'+(ecrits?' · '+ecrits:'')],['porte','☀️ Ce qui me porte'],['pese','🌧 Ce qui me pèse']].map(function(x){
     return '<button class="'+(journalFiltre===x[0]?'on':'')+'" data-jf="'+x[0]+'">'+x[1]+'</button>'}).join('');
+  if(journalFiltre==='porte'||journalFiltre==='pese'){liste.innerHTML=rsVueJournal(journalFiltre);return;}
   var vus=journalFiltre==='ecrit'?tous.filter(function(j){return j.texte}):tous;
   var ordre=function(a,b){var ka=cleJournal(a,a.jourJ),kb=cleJournal(b,b.jourJ);
     for(var i=0;i<ka.length;i++){if(ka[i]<kb[i])return -1;if(ka[i]>kb[i])return 1;}return 0;};
@@ -4048,9 +4334,10 @@ function renderJournal(){
     var rel=relatifJour(j.jour);
     return '<section class="jcarte'+(j.jour===AUJ?' auj':'')+'">'+
       '<div class="jc-tete"><div class="jc-date"><b>'+dateLong(j.jour)+'</b>'+(rel?'<span class="jc-rel">'+rel+'</span>':'')+'</div>'+
-      '<div class="jc-resume">'+resumeJour(j)+'</div></div>'+
+      '<div class="jc-resume">'+resumeJour(j)+rsResumeJour(j.jour)+'</div></div>'+
       (j.texte?'<button type="button" class="jc-texte" data-jr-ouvrir="'+j.jour+'">'+esc(j.texte)+'</button>':
         '<button type="button" class="jc-ecrire" data-jr-ouvrir="'+j.jour+'">✏️ Écrire sur ce jour</button>')+
+      rsBlocJour(j.jour)+
       (j.items.length?'<div class="jc-items">'+j.items.map(function(x,i){x.jourJ=j.jour;x.rangJ=i;return x}).slice().sort(ordre).map(ligneJournal).join('')+'</div>':'')+
       '</section>';
   }).join('');
@@ -5546,7 +5833,7 @@ document.addEventListener('contextmenu',function(e){if(glisse)e.preventDefault()
 
 function appliquer(d){
   var ancien=AUJ;
-  D=d;D.archives=D.archives||[];D.idees=D.idees||[];D.films=(D.films||[]).map(function(m){m.type='film';return m});D.series=(D.series||[]).map(function(m){m.type='serie';return m});D.visionnages=D.visionnages||[];D.episodes=D.episodes||[];D.listes=D.listes||[];D.poses=D.poses||[];D.progres=D.progres||[];D.souhaits=D.souhaits||[];D.journal=D.journal||[];D.ordonnances=D.ordonnances||[];D.contacts=D.contacts||[];D.discussions=(D.discussions||[]).map(function(d){d.passages=d.passages||[];return d});reprendreBrouillon();D.rappels=(D.rappels||[]).map(function(r){r.debut=r.debut||'';r.fin=r.fin||'';return r});AUJ=d.aujourdhui;
+  D=d;D.archives=D.archives||[];D.idees=D.idees||[];D.films=(D.films||[]).map(function(m){m.type='film';return m});D.series=(D.series||[]).map(function(m){m.type='serie';return m});D.visionnages=D.visionnages||[];D.episodes=D.episodes||[];D.listes=D.listes||[];D.poses=D.poses||[];D.progres=D.progres||[];D.souhaits=D.souhaits||[];D.journal=D.journal||[];D.ordonnances=D.ordonnances||[];D.contacts=D.contacts||[];D.ressentis=(D.ressentis||[]).map(function(r){r.historique=r.historique||[];return r});D.discussions=(D.discussions||[]).map(function(d){d.passages=d.passages||[];return d});reprendreBrouillon();D.rappels=(D.rappels||[]).map(function(r){r.debut=r.debut||'';r.fin=r.fin||'';return r});AUJ=d.aujourdhui;
   if(jourVu===null||jourVu===ancien)jourVu=AUJ;
   if(d.calendriersEnErreur&&d.calendriersEnErreur.length)
     document.getElementById('hint').textContent='Calendrier qui ne répond pas pour l\'instant : '+d.calendriersEnErreur.join(', ')+'.';
