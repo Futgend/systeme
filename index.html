@@ -920,6 +920,10 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
 .rs-l small{font-size:12px;color:var(--t2);white-space:nowrap;flex-shrink:0}
 .rs-pese .rs-l{background:#F2EEF7;border-left-color:#A392AF}
 .rs-quand{color:#C44B56!important;font-weight:600}
+.rs-mtn .rs-l{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.rs-l.rs-glisse{position:relative;z-index:5;box-shadow:var(--ombre);cursor:grabbing}
+.rs-l.rs-cible{box-shadow:0 -3px 0 #C44B56}
+.rs-mtn.rs-cible-fin::after{content:'';display:block;height:3px;background:#C44B56;border-radius:2px;margin:-3px 14px 6px}
 .rs-nv{display:block;width:calc(100% - 28px);margin:6px 14px 12px;font:inherit;font-size:14.5px;padding:8px 12px;border:1.5px dashed var(--line2);
   border-radius:12px;background:transparent;color:var(--ink);box-sizing:border-box}
 .rs-nv:focus{outline:none;border-style:solid;border-color:var(--bord);background:#FFFBF3}
@@ -3998,6 +4002,9 @@ function rsPhase(r,j){
   var f=r.fin||r.debut;
   return f&&j>f?'fini':'maintenant';
 }
+function rsTriMtn(a,b){
+  return (a.ordre||1e6)-(b.ordre||1e6)||(a.debut?0:1)-(b.debut?0:1)||(a.fin||a.debut).localeCompare(b.fin||b.debut)||a.cree.localeCompare(b.cree)||(parseInt(a.id.slice(2),10)||0)-(parseInt(b.id.slice(2),10)||0);
+}
 function rsQuand(r,j){
   var ph=rsPhase(r,j);
   if(ph==='bientot'){
@@ -4058,8 +4065,7 @@ function renderRessentis(){
   var porte=D.ressentis.filter(function(r){return r.sorte==='porte'&&rsEtatAu(r,j)==='actif'});
   var fin=auj?porte.filter(function(r){return rsPhase(r,j)==='fini'}):[];
   var bientot=porte.filter(function(r){return rsPhase(r,j)==='bientot'}).sort(function(a,b){return a.debut.localeCompare(b.debut)});
-  var mtn=porte.filter(function(r){return rsPhase(r,j)==='maintenant'}).sort(function(a,b){
-    return (a.debut?0:1)-(b.debut?0:1)||(a.fin||a.debut).localeCompare(b.fin||b.debut)||a.cree.localeCompare(b.cree)});
+  var mtn=porte.filter(function(r){return rsPhase(r,j)==='maintenant'}).sort(rsTriMtn);
   var pese=D.ressentis.filter(function(r){return r.sorte==='pese'});
   var issues=auj?pese.filter(function(r){return r.etat==='actif'&&r.debut&&rsPhase(r,j)==='fini'}):[];
   var duJour=pese.filter(function(r){return rsDuJour(r,j)&&issues.indexOf(r)<0});
@@ -4068,7 +4074,7 @@ function renderRessentis(){
       fin.map(function(r){return '<div class="rs-fin" data-rs="'+esc(r.id)+'"><b>'+esc(r.texte)+'</b><small>✨ C’était comment ?</small>'+
         '<div class="rs-ligne"><input type="text" data-rs-mot="'+esc(r.id)+'" placeholder="Une phrase, si tu veux…" aria-label="Comment c’était ?"><button type="button" data-rs-souvenir>✨</button></div></div>'}).join('')+
       (bientot.length?'<div class="rs-g">Bientôt</div>'+bientot.map(function(r){return ligneRs(r,rsQuand(r,j))}).join(''):'')+
-      (mtn.length?'<div class="rs-g">En ce moment</div>'+mtn.map(function(r){return ligneRs(r,rsQuand(r,j))}).join(''):'')+
+      (mtn.length?'<div class="rs-g">En ce moment</div><div class="rs-mtn">'+mtn.map(function(r){return ligneRs(r,rsQuand(r,j))}).join('')+'</div>':'')+
       '<input type="text" class="rs-nv" data-rs-nv="porte" placeholder="＋ Ce qui me fait du bien…" aria-label="Ce qui me porte"></div>'+
     '<div class="rs-bloc rs-pese"><div class="rs-t">🌧 Ce qui me pèse</div>'+
       issues.map(function(r){return '<div class="rs-fin" data-rs="'+esc(r.id)+'"><small>Tu avais peur :</small><b>'+esc(r.texte)+'</b><small>Comment ça s’est passé ?</small>'+
@@ -4100,8 +4106,48 @@ document.addEventListener('click',function(e){
     if(is){var x=ISSUES.filter(function(y){return y[0]===is.dataset.rsIssue})[0];rsGesteFaire(rf,is.dataset.rsIssue==='encore'?'encore':'issue',x[1].replace(/^\S+\s/,''));return;}
   }
   var o=e.target.closest('[data-rs-ouvre]');
-  if(o){ouvrirRessenti(o.dataset.rsOuvre);return;}
+  if(o){if(!rsApresGl)ouvrirRessenti(o.dataset.rsOuvre);return;}
 });
+
+var rsGl=null,rsApresGl=false;
+document.addEventListener('pointerdown',function(e){
+  if(e.button)return;
+  var row=e.target.closest('.rs-mtn .rs-l');if(!row)return;
+  rsGl={row:row,liste:row.parentNode,id:e.pointerId,x0:e.clientX,y0:e.clientY,touch:e.pointerType!=='mouse',actif:false,place:null};
+  if(rsGl.touch)rsGl.timer=setTimeout(function(){if(rsGl&&!rsGl.actif)rsDemarrer()},280);
+});
+function rsDemarrer(){rsGl.actif=true;rsGl.row.classList.add('rs-glisse');try{if(navigator.vibrate)navigator.vibrate(15)}catch(er){}}
+document.addEventListener('pointermove',function(e){
+  if(!rsGl||e.pointerId!==rsGl.id)return;
+  if(!rsGl.actif){
+    var d=Math.hypot(e.clientX-rsGl.x0,e.clientY-rsGl.y0);
+    if(rsGl.touch){if(d>8){clearTimeout(rsGl.timer);rsGl=null;}return;}
+    if(d<=6)return;rsDemarrer();
+  }
+  rsGl.row.style.transform='translateY('+(e.clientY-rsGl.y0)+'px)';
+  var rows=[].filter.call(rsGl.liste.querySelectorAll('.rs-l'),function(r){return r!==rsGl.row});
+  var n=rows.filter(function(r){var b=r.getBoundingClientRect();return b.top+b.height/2<e.clientY}).length;
+  rows.forEach(function(r,i){r.classList.toggle('rs-cible',i===n)});
+  rsGl.liste.classList.toggle('rs-cible-fin',n===rows.length);
+  rsGl.place=n;
+});
+function rsFinir(ok){
+  var g=rsGl;rsGl=null;if(!g)return;clearTimeout(g.timer);
+  if(!g.actif)return;
+  rsApresGl=true;setTimeout(function(){rsApresGl=false},60);
+  if(ok&&g.place!=null){
+    var moi=g.row.dataset.rsOuvre,ids=[].map.call(g.liste.querySelectorAll('.rs-l'),function(r){return r.dataset.rsOuvre}).filter(function(id){return id!==moi});
+    ids.splice(g.place,0,moi);
+    var envoi=[];
+    ids.forEach(function(id,i){var r=ressenti(id);if(r&&r.ordre!==i+1){r.ordre=i+1;envoi.push({id:r.id,ordre:i+1});}});
+    if(envoi.length)google.script.run.withFailureHandler(echecServeur).ordonnerRessentis(envoi);
+  }
+  rendre();
+}
+document.addEventListener('pointerup',function(e){if(rsGl&&e.pointerId===rsGl.id)rsFinir(true)});
+document.addEventListener('pointercancel',function(e){if(rsGl&&e.pointerId===rsGl.id)rsFinir(false)});
+document.addEventListener('touchmove',function(e){if(rsGl&&rsGl.actif)e.preventDefault()},{passive:false});
+document.addEventListener('contextmenu',function(e){if(rsGl)e.preventDefault()});
 
 var MOTS_RS={cree:'écrite',veilleuse:'🌙 en veilleuse',rallume:'☀️ rallumée',souvenir:'✨ souvenir',revient:'revenue',mieux:'ça va mieux',issue:'ça s’est passé',encore:'encore là'};
 var confirmeSupprRs=false;
@@ -4201,11 +4247,11 @@ function rsResumeJour(j){
 }
 function rsDernierGeste(r,gs){var h=rsHistoire(r).filter(function(x){return gs.indexOf(x.g)>=0});return h.length?h[h.length-1].j:'';}
 function rsVueJournal(sorte){
-  var l=D.ressentis.filter(function(r){return r.sorte===sorte}),sec=function(t,rs,info){
-    return rs.length?'<div class="rs-g">'+t+' ('+rs.length+')</div>'+rs.map(function(r){return ligneRs(r,info(r))}).join(''):'';};
+  var l=D.ressentis.filter(function(r){return r.sorte===sorte}),sec=function(t,rs,info,cls){
+    return rs.length?'<div class="rs-g">'+t+' ('+rs.length+')</div>'+(cls?'<div class="'+cls+'">':'')+rs.map(function(r){return ligneRs(r,info(r))}).join('')+(cls?'</div>':''):'';};
   if(sorte==='porte'){
     var act=l.filter(function(r){return r.etat==='actif'});
-    var html=sec('En ce moment',act.filter(function(r){return rsPhase(r,AUJ)!=='bientot'}),function(r){return rsQuand(r,AUJ)})+
+    var html=sec('En ce moment',act.filter(function(r){return rsPhase(r,AUJ)!=='bientot'}).sort(rsTriMtn),function(r){return rsQuand(r,AUJ)},'rs-mtn')+
       sec('Bientôt',act.filter(function(r){return rsPhase(r,AUJ)==='bientot'}).sort(function(a,b){return a.debut.localeCompare(b.debut)}),function(r){return rsQuand(r,AUJ)})+
       sec('🌙 En veilleuse',l.filter(function(r){return r.etat==='veilleuse'}),function(r){var d=rsDernierGeste(r,['veilleuse']);return d?'depuis le '+dateCourte(d):''})+
       sec('✨ Souvenirs',l.filter(function(r){return r.etat==='souvenir'}).sort(function(a,b){return rsDernierGeste(b,['souvenir']).localeCompare(rsDernierGeste(a,['souvenir']))}),
