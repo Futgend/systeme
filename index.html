@@ -2061,6 +2061,7 @@ function ouvrirFiche(l){
     '<textarea class="fx-note" data-c="note" placeholder="Une note…" rows="2">'+esc(t.note)+'</textarea>'+
     blocRappelsLies(t.id,t.projet)+
     '<details class="fx-plus"'+(ficheDetails?' open':'')+'><summary>Plus de détails</summary>'+
+      (estRecurrente(t)?blocPoseAuto(t):'')+
       '<div class="row2"><div><label>Durée (min)</label><input type="number" min="0" step="5" data-c="duree_min" value="'+(t.duree||'')+'"></div>'+
       '<div><label>Date limite</label><input type="date" data-c="echeance" value="'+esc(t.echeance)+'"></div></div>'+
       '<div class="row2"><div><label>Commencer à partir du</label><input type="date" data-c="debut" value="'+esc(t.debut||'')+'"></div>'+
@@ -3750,12 +3751,14 @@ function blocRecFiche(t){
       '<span>🔁 Revient tous les</span><span class="pm grand"><button type="button" class="pm-b" data-fx="tl-moins" aria-label="Plus souvent">−</button>'+
       '<b>'+n+' jour'+(n>1?'s':'')+'</b><button type="button" class="pm-b" data-fx="tl-plus" aria-label="Plus espacé">+</button></span>')+'</div>'+
     '<div class="fx-cap">'+(der?'Dernière fois '+ilYaRec(der)+' ('+dateCourte(der)+')':'Pas encore faite')+(et.quand&&!et.passee?' · '+esc(et.txt):'')+'</div>'+
-    '<div class="fx-lab">Posée d’office</div><div class="fx-chips">'+[['','Non, dans « À poser »'],['journee','Dans la journée'],['matin','Le matin'],['apres-midi','L’après-midi'],['soir','Le soir']].map(function(x){
-      var on=x[0]?momentsAuto(t).indexOf(x[0])>=0:!momentsAuto(t).length;
-      return '<button type="button" class="fx-chip'+(on?' on':'')+'" data-fx-pa="'+x[0]+'">'+esc(x[1])+'</button>';
-    }).join('')+'</div>'+
     (et.passee?'<div class="fx-cap">⏭ Passée jusqu’au '+dateLong(t.pause)+' · <button type="button" class="fx-lien fx-inline" data-fx="reprendre">la remettre</button></div>':
       (!posee&&t.statut!=='fait'?'<button type="button" class="fx-lien" data-fx="passer">⏭ La passer pour quelques jours</button>':''));
+}
+function blocPoseAuto(t){
+  return '<div class="fx-lab">Posée d’office</div><div class="fx-chips">'+[['','Non, dans « À poser »'],['journee','Dans la journée'],['matin','Le matin'],['apres-midi','L’après-midi'],['soir','Le soir']].map(function(x){
+    var on=x[0]?momentsAuto(t).indexOf(x[0])>=0:!momentsAuto(t).length;
+    return '<button type="button" class="fx-chip'+(on?' on':'')+'" data-fx-pa="'+x[0]+'">'+esc(x[1])+'</button>';
+  }).join('')+'</div>';
 }
 function sectionRecurrentes(pid){
   var rs=tachesProjet(pid).filter(function(t){return estRecurrente(t)&&t.statut!=='sommeil'});
