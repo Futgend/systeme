@@ -269,10 +269,24 @@ body.copie #d{opacity:.55}
   padding:13px 26px;font:inherit;font-size:15px;cursor:pointer}
 .load{text-align:center;color:var(--t2);padding:40px 0;font-size:15px}
 .hide{display:none}
-.jnav{display:flex;align-items:center;gap:6px}
+.jnav{display:flex;align-items:center;gap:6px;position:relative}
+#cal{font-size:15px}
+.calpop{position:absolute;top:calc(100% + 8px);left:0;z-index:9;width:272px;max-width:calc(100vw - 32px);
+  background:var(--card);border:1.5px solid var(--bord);border-radius:18px;box-shadow:var(--ombre);padding:10px 10px 12px}
+.calpop.hide{display:none}
+.cal-t{display:flex;align-items:center;justify-content:space-between;font-weight:600;text-transform:capitalize;margin-bottom:6px}
+.cal-t button{border:0;background:rgba(46,38,34,.07);color:var(--ink);width:28px;height:28px;border-radius:14px;font:inherit;font-size:16px;cursor:pointer}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.cal-g .js{font-size:11px;color:var(--t2);font-weight:600;padding:2px 0}
+.cal-g button{border:0;background:none;font:inherit;font-size:14px;color:var(--ink);height:32px;border-radius:16px;cursor:pointer}
+.cal-g button:hover{background:rgba(46,38,34,.08)}
+.cal-g button.auj{box-shadow:inset 0 0 0 1.5px #C44B56;font-weight:600}
+.cal-g button.vu{background:#F3A155;font-weight:600;box-shadow:inset 0 0 0 1.5px var(--bord)}
+.cal-pied{display:flex;justify-content:center;margin-top:8px}
+.cal-pied button{border:1.5px solid var(--bord);background:var(--card);border-radius:999px;padding:5px 14px;font:inherit;font-size:13px;cursor:pointer;box-shadow:var(--ombre-s)}
 .jnav .date{width:11.6em;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:420px){.jnav .date{width:12em;font-size:16.5px}}
-.jnav button{border:0;background:var(--card);color:var(--t2);width:30px;height:30px;
+@media(max-width:420px){.jnav .date{width:10.8em;font-size:16.5px}}
+.jnav>button{border:0;background:var(--card);color:var(--t2);width:30px;height:30px;
   border-radius:15px;font:inherit;font-size:18px;line-height:1;cursor:pointer}
 
 .scrim{position:fixed;inset:0;background:rgba(74,59,54,.22);display:none;z-index:10}
@@ -604,7 +618,7 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
 .tabs{background:var(--card);border:1.5px solid var(--bord);border-radius:999px;box-shadow:var(--ombre);padding:4px;gap:4px}
 .tabs button{border-radius:999px;color:var(--t2);font-weight:500}
 .tabs button.on{background:#F3A155;color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1.5px var(--bord)}
-.jnav button{background:var(--card);border:1.5px solid var(--bord);box-shadow:var(--ombre-s);color:var(--ink)}
+.jnav>button{background:var(--card);border:1.5px solid var(--bord);box-shadow:var(--ombre-s);color:var(--ink)}
 .budget,.anp,.moment,.reserve,.rappels{background:var(--card);border:1.5px solid var(--bord);border-radius:20px;box-shadow:var(--ombre)}
 .anp{background:#F3D6D8}
 .anp-t{color:#9E3843;font-weight:600}
@@ -1070,6 +1084,8 @@ button.lu-mini{font:inherit;font-size:12px;border:0;cursor:pointer}
       <button type="button" id="prev" aria-label="Jour précédent">‹</button>
       <div class="date" id="d">—</div>
       <button type="button" id="next" aria-label="Jour suivant">›</button>
+      <button type="button" id="cal" aria-label="Choisir une date" aria-expanded="false">📅</button>
+      <div class="calpop hide" id="calpop"></div>
     </div>
     <div class="clock" id="h"></div>
   </div>
@@ -1579,6 +1595,36 @@ function dateLong(s){return parseIso(s).toLocaleDateString('fr-FR',{weekday:'lon
 function dateCourte(s){return parseIso(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}
 function dateAff(){document.getElementById('d').textContent=dateLong(jourVu||iso(new Date()))}
 function decaler(n){var d=parseIso(jourVu);d.setDate(d.getDate()+n);jourVu=iso(d);rendre()}
+var calMois='';
+function dessinerCal(){
+  var pop=document.getElementById('calpop'),a=+calMois.slice(0,4),m=+calMois.slice(5,7)-1;
+  var premier=new Date(a,m,1,12),nb=new Date(a,m+1,0,12).getDate(),decal=(premier.getDay()+6)%7,auj=iso(new Date());
+  var h='<div class="cal-t"><button type="button" data-cal-m="-1" aria-label="Mois précédent">‹</button><span>'+
+    premier.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})+'</span><button type="button" data-cal-m="1" aria-label="Mois suivant">›</button></div><div class="cal-g">';
+  ['L','M','M','J','V','S','D'].forEach(function(j){h+='<span class="js">'+j+'</span>';});
+  for(var i=0;i<decal;i++)h+='<span></span>';
+  for(var d=1;d<=nb;d++){
+    var j=calMois+'-'+String(d).padStart(2,'0');
+    h+='<button type="button" data-cal-j="'+j+'" class="'+(j===jourVu?'vu ':'')+(j===auj?'auj':'')+'">'+d+'</button>';
+  }
+  h+='</div>'+(jourVu!==auj?'<div class="cal-pied"><button type="button" data-cal-j="'+auj+'">Aujourd\'hui</button></div>':'');
+  pop.innerHTML=h;
+}
+function ouvrirCal(oui){
+  var pop=document.getElementById('calpop');
+  if(oui){calMois=(jourVu||iso(new Date())).slice(0,7);dessinerCal();}
+  pop.classList.toggle('hide',!oui);
+  document.getElementById('cal').setAttribute('aria-expanded',oui?'true':'false');
+}
+document.addEventListener('click',function(e){
+  var cj=e.target.closest('[data-cal-j]');
+  if(cj){ouvrirCal(false);jourVu=cj.dataset.calJ;rendre();return;}
+  var cm=e.target.closest('[data-cal-m]');
+  if(cm){calMois=iso(new Date(+calMois.slice(0,4),+calMois.slice(5,7)-1+(+cm.dataset.calM),1,12)).slice(0,7);dessinerCal();return;}
+  if(e.target.closest('#cal')){ouvrirCal(document.getElementById('calpop').classList.contains('hide'));return;}
+  if(!e.target.closest('#calpop'))ouvrirCal(false);
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')ouvrirCal(false);});
 
 var DEBUT=9*60,FIN=23*60,CAPACITE=12*60,MIDI=[12*60,13*60];   // le déjeuner, seul repas retiré du temps libre
 function minutesFaites(act){
