@@ -1823,6 +1823,7 @@ function rendre(){
   var replays=reste.filter(function(x){return estReplay(x.t)}).map(function(x){return x.t}).sort(ordreReplays);
   reste=reste.filter(function(x){return !estReplay(x.t)});
   var rangP={};D.projets.forEach(function(p,i){rangP[p.id]=i});
+  var pRel=projetRelation();if(pRel&&rangP[pRel]!=null)rangP[pRel]=-1;   // « Relation et contact » en tête de « À poser »
   var grp=function(t){return estCourses(t)?9e5:(t.projet&&rangP[t.projet]!=null?rangP[t.projet]:1e6)};
   reste=reste.concat(recDues.map(function(x){return {t:x.t,i:D.taches.indexOf(x.t),et:x.et}}));
   reste.sort(function(a,b){return grp(a.t)-grp(b.t)||(a.t.statut==='en cours'?0:1)-(b.t.statut==='en cours'?0:1)||a.i-b.i});
