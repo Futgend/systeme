@@ -1396,7 +1396,7 @@ function heuresEvt(o){
   var fin='';
   if(o.heure&&o.duree){
     var p=o.heure.split(':'),m=((+p[0])*60+(+p[1])+o.duree)%1440;
-    fin='<small>'+heureAff(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'))+'</small>';
+    fin='<small>'+(m===0?'minuit':heureAff(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')))+'</small>';
   }
   return '<span class="heure">'+heureAff(o.heure)+fin+'</span>';
 }
@@ -1445,8 +1445,9 @@ function lignePossible(o){
 }
 function periodeEvt(o){
   var n=Math.round((parseIso(o.au)-parseIso(o.du))/864e5)+1,i=Math.round((parseIso(o.jour)-parseIso(o.du))/864e5)+1;
-  var du=o.du.slice(5,7)===o.au.slice(5,7)?String(+o.du.slice(8,10)):dateCourte(o.du);
-  return du+' → '+dateCourte(o.au)+' · '+(i===n?'dernier jour':'jour '+i+' sur '+n);
+  var fin=o.hfin==='24:00'?'minuit':heureAff(o.hfin);
+  var du=o.hdeb?dateCourte(o.du)+' '+heureAff(o.hdeb):o.du.slice(5,7)===o.au.slice(5,7)?String(+o.du.slice(8,10)):dateCourte(o.du);
+  return du+' → '+dateCourte(o.au)+(o.hdeb?' '+fin:'')+' · '+(i===n?'dernier jour':'jour '+i+' sur '+n);
 }
 function ligneEvt(o){
   var p=participation(o.id,o.jour),st=p&&p.statut!=='choisi'?p.statut:'';
@@ -1465,7 +1466,7 @@ function ligneEvt(o){
     '<button type="button" class="part" data-part="non">Pas cette fois</button>'))+arch;
   return '<div class="t evt'+(o.facultatif?' facu':'')+(st?' '+st:'')+(evtFini(o)?' fini':'')+'" data-ev="'+esc(o.id)+'" title="'+esc([o.lieu,o.source].filter(Boolean).join(' · '))+'">'+
     heuresEvt(o)+
-    corpsLigne(esc(o.titre),projetsEvt(o).map(function(pid){return tagProjet({projet:pid})}).join('')+'<span class="evbtns">'+droite+'</span>'+boutonsOrdonnance(o))+'</div>';
+    corpsLigne(esc(o.titre),projetsEvt(o).map(function(pid){return tagProjet({projet:pid})}).join('')+(o.heure&&o.du?'<span class="dur periode">'+esc(periodeEvt(o))+'</span>':'')+'<span class="evbtns">'+droite+'</span>'+boutonsOrdonnance(o))+'</div>';
 }
 function poserParticipation(id,statut){
   D.participations=D.participations.filter(function(p){return !(p.evenement===id&&p.jour===jourVu)});
@@ -3850,7 +3851,7 @@ function evtsAVenirProjet(pid){
     return o.jour>=AUJ&&!evtFini(o)&&(!p||p.statut==='choisi'||p.statut==='oui');
   }).slice(0,6);
   return avenir.length?'<div class="psec">Événements à venir</div>'+avenir.map(function(o){
-    return '<div class="pev"><span class="d">'+(o.du?dateCourte(o.du)+' → '+dateCourte(o.au):dateEvt(o.jour)+(o.heure?' · '+heureAff(o.heure):''))+'</span>'+
+    return '<div class="pev"><span class="d">'+(o.du?dateCourte(o.du)+(o.hdeb?' '+heureAff(o.hdeb):'')+' → '+dateCourte(o.au):dateEvt(o.jour)+(o.heure?' · '+heureAff(o.heure):''))+'</span>'+
       '<span class="n">'+esc(o.titre)+'</span><span class="s">'+(o.facultatif&&!participation(o.id,o.jour)?'possible':esc(o.source||''))+'</span></div>';
   }).join(''):'';
 }
