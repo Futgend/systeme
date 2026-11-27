@@ -1591,9 +1591,10 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp
 
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function parseIso(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2],12)}
-function dateLong(s){return parseIso(s).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}
-function dateCourte(s){return parseIso(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}
-function dateAff(){document.getElementById('d').textContent=dateLong(jourVu||iso(new Date()))}
+function avecAn(s,an){return an||s.slice(0,4)!==String(new Date().getFullYear())}
+function dateLong(s,an){return parseIso(s).toLocaleDateString('fr-FR',avecAn(s,an)?{weekday:'long',day:'numeric',month:'long',year:'numeric'}:{weekday:'long',day:'numeric',month:'long'})}
+function dateCourte(s,an){return parseIso(s).toLocaleDateString('fr-FR',avecAn(s,an)?{day:'numeric',month:'short',year:'numeric'}:{day:'numeric',month:'short'})}
+function dateAff(){document.getElementById('d').textContent=parseIso(jourVu||iso(new Date())).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}
 function decaler(n){var d=parseIso(jourVu);d.setDate(d.getDate()+n);jourVu=iso(d);rendre()}
 var calMois='';
 function dessinerCal(){
@@ -4030,7 +4031,7 @@ function renderJournalJour(){
 }
 function ouvrirJournal(jour){
   fiche.dataset.l='';fiche.dataset.mode='journal';
-  fiche.innerHTML='<div class="fx"><div class="fx-lab" style="margin-top:2px">📓 Journal · '+dateLong(jour)+'</div>'+
+  fiche.innerHTML='<div class="fx"><div class="fx-lab" style="margin-top:2px">📓 Journal · '+dateLong(jour,true)+'</div>'+
     '<textarea class="jr-fiche" data-journal="'+jour+'" placeholder="Ce qui a marqué ta journée, ce que tu as fait, comment tu te sens…">'+esc(journalDe(jour))+'</textarea>'+
     '<div class="jr-etat"></div>'+
     '<div class="btns"><button type="button" class="pri" data-act="fermer">OK</button></div></div>';
@@ -4230,7 +4231,7 @@ function ouvrirRessenti(id){
     '<div class="fx-lab">'+(porte?(r.etat==='souvenir'?'Comment c’était ?':'Note'):(r.etat==='mieux'?'Comment ça s’est passé ?':'Note'))+'</div>'+
     '<textarea class="fx-note" data-rs-champ="note" rows="2" aria-label="Note">'+esc(r.note)+'</textarea>'+
     '<div class="fx-lab">Son histoire</div><div class="rs-hist">'+rsHistoire(r).map(function(x){
-      return '<div><b>'+dateCourte(x.j)+'</b> '+(MOTS_RS[x.g]||esc(x.g))+'</div>'}).join('')+'</div>'+
+      return '<div><b>'+dateCourte(x.j,true)+'</b> '+(MOTS_RS[x.g]||esc(x.g))+'</div>'}).join('')+'</div>'+
     '<div class="btns"><button type="button" class="doux'+(confirmeSupprRs?' sur':'')+'" data-rs-act="suppr">'+(confirmeSupprRs?'Supprimer ?':'Supprimer')+'</button>'+
     '<button type="button" class="pri" data-act="fermer">OK</button></div></div>';
   fiche.classList.add('on');scrim.classList.add('on');fiche.scrollTop=defil;
@@ -4281,7 +4282,7 @@ function rsLigneJour(r,x){
 }
 function rsPeriode(r,jfin){
   var a=r.debut||r.cree,b=r.debut?(r.fin||r.debut):jfin;
-  return a&&b&&a!==b?'du '+dateCourte(a)+' au '+dateCourte(b):(a?dateCourte(a):'');
+  return a&&b&&a!==b?'du '+dateCourte(a,true)+' au '+dateCourte(b,true):(a?dateCourte(a,true):'');
 }
 function rsGestesDuJour(j){
   var l=[];
@@ -4299,6 +4300,7 @@ function rsResumeJour(j){
   var gs=rsGestesDuJour(j),p=gs.filter(function(y){return y.r.sorte==='porte'}).length,q=gs.length-p;
   return (p?'<span>☀️ '+p+'</span>':'')+(q?'<span>🌧 '+q+'</span>':'');
 }
+function rsJourSouvenir(r){return r.debut?(r.fin||r.debut):(rsDernierGeste(r,['souvenir'])||r.cree)}
 function rsDernierGeste(r,gs){var h=rsHistoire(r).filter(function(x){return gs.indexOf(x.g)>=0});return h.length?h[h.length-1].j:'';}
 function rsVueJournal(sorte){
   var l=D.ressentis.filter(function(r){return r.sorte===sorte}),sec=function(t,rs,info,cls){
@@ -4307,16 +4309,17 @@ function rsVueJournal(sorte){
     var act=l.filter(function(r){return r.etat==='actif'});
     var html=sec('En ce moment',act.filter(function(r){return rsPhase(r,AUJ)!=='bientot'}).sort(rsTriMtn),function(r){return rsQuand(r,AUJ)},'rs-mtn')+
       sec('Bientôt',act.filter(function(r){return rsPhase(r,AUJ)==='bientot'}).sort(function(a,b){return a.debut.localeCompare(b.debut)}),function(r){return rsQuand(r,AUJ)})+
-      sec('🌙 En veilleuse',l.filter(function(r){return r.etat==='veilleuse'}),function(r){var d=rsDernierGeste(r,['veilleuse']);return d?'depuis le '+dateCourte(d):''})+
-      sec('✨ Souvenirs',l.filter(function(r){return r.etat==='souvenir'}).sort(function(a,b){return rsDernierGeste(b,['souvenir']).localeCompare(rsDernierGeste(a,['souvenir']))}),
+      sec('🌙 En veilleuse',l.filter(function(r){return r.etat==='veilleuse'}).sort(function(a,b){return rsDernierGeste(b,['veilleuse']).localeCompare(rsDernierGeste(a,['veilleuse']))}),
+        function(r){var d=rsDernierGeste(r,['veilleuse']);return d?'depuis le '+dateCourte(d,true):''})+
+      sec('✨ Souvenirs',l.filter(function(r){return r.etat==='souvenir'}).sort(function(a,b){return rsJourSouvenir(b).localeCompare(rsJourSouvenir(a))||(b.debut||b.cree).localeCompare(a.debut||a.cree)}),
         function(r){return rsPeriode(r,rsDernierGeste(r,['souvenir']))+(r.note?' · « '+r.note+' »':'')});
     return '<div class="rs-bloc rs-porte rs-vue"><div class="rs-t">☀️ Ce qui me porte</div>'+(html||'<div class="rs-vide">Rien encore : ça s’écrit dans la journée, sous ton journal.</div>')+'</div>';
   }
   var fois=function(r){var n=rsFois(r);return n>1?' · revenue '+(n-1)+' fois':''};
   var html2=sec('Encore là',l.filter(function(r){return r.etat!=='mieux'}).sort(function(a,b){return b.cree.localeCompare(a.cree)}),
-      function(r){return 'depuis le '+dateCourte(r.cree)+fois(r)+(r.debut&&rsPhase(r,AUJ)!=='fini'?' · le '+dateCourte(r.debut):'')})+
+      function(r){return 'depuis le '+dateCourte(r.cree,true)+fois(r)+(r.debut&&rsPhase(r,AUJ)!=='fini'?' · le '+dateCourte(r.debut,true):'')})+
     sec('Passé',l.filter(function(r){return r.etat==='mieux'}).sort(function(a,b){return rsDernierGeste(b,['mieux','issue']).localeCompare(rsDernierGeste(a,['mieux','issue']))}),
-      function(r){var d=rsDernierGeste(r,['mieux','issue']);return (d&&d!==r.cree?'du '+dateCourte(r.cree)+' au '+dateCourte(d):dateCourte(r.cree))+fois(r)+(r.note?' · '+r.note:'')});
+      function(r){var d=rsDernierGeste(r,['mieux','issue']);return (d&&d!==r.cree?'du '+dateCourte(r.cree,true)+' au '+dateCourte(d,true):dateCourte(r.cree,true))+fois(r)+(r.note?' · '+r.note:'')});
   return '<div class="rs-bloc rs-pese rs-vue"><div class="rs-t">🌧 Ce qui me pèse</div>'+(html2||'<div class="rs-vide">Rien ici.</div>')+'</div>';
 }
 
@@ -4433,7 +4436,7 @@ function renderJournal(){
   html+=vus.slice(0,journalNb).map(function(j){
     var rel=relatifJour(j.jour);
     return '<section class="jcarte'+(j.jour===AUJ?' auj':'')+'">'+
-      '<div class="jc-tete"><div class="jc-date"><b>'+dateLong(j.jour)+'</b>'+(rel?'<span class="jc-rel">'+rel+'</span>':'')+'</div>'+
+      '<div class="jc-tete"><div class="jc-date"><b>'+dateLong(j.jour,true)+'</b>'+(rel?'<span class="jc-rel">'+rel+'</span>':'')+'</div>'+
       '<div class="jc-resume">'+resumeJour(j)+rsResumeJour(j.jour)+'</div></div>'+
       (j.texte?'<button type="button" class="jc-texte" data-jr-ouvrir="'+j.jour+'">'+esc(j.texte)+'</button>':
         '<button type="button" class="jc-ecrire" data-jr-ouvrir="'+j.jour+'">✏️ Écrire sur ce jour</button>')+
